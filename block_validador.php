@@ -1,7 +1,7 @@
 <?php
 class block_validador extends block_base {
     public function init() {
-        $this->title = get_string('pluginname', 'block_hello_course');
+        $this->title = get_string('pluginname', 'block_validador');
     }
 
     public function get_content() {
