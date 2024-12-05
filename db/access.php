@@ -22,7 +22,15 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
- // General strings
-$string['pluginname'] = 'Validador';
-$string['message'] = 'Hello, you are in the course: {$a}.';
-$string['nogroups'] = 'No hay grupos en este curso';
+ defined('MOODLE_INTERNAL') || die();
+ 
+ $capabilities = [
+    'block/validador:addinstance' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE, // Solo en el contexto de un curso.
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+        ],
+    ],
+];
