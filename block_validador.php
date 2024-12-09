@@ -32,7 +32,7 @@ class block_validador extends block_base {
             return $this->content;
         }
 
-        global $COURSE;
+        global $COURSE, $DB, $CFG;
 
         // Contenido del bloque
         $this->content = new stdClass();
@@ -46,18 +46,120 @@ class block_validador extends block_base {
         // Mostrar el emoji y el mensaje correspondiente según las validaciones
         $emoji = $validations_passed ? '✅' : '❌';
         $message = $validations_passed ? 'Curso Validado' : 'Curso No Validado';
+        $message = "<span style='font-size: 2em;'>$message</span>";
         $this->content->text = "$emoji $message<br>";
-
+        $this->content->text .= "<h4>Grupos</h4>";
         // Listado de validaciones
         foreach ($validations as $validation) {
-            $status = $validation['passed'] ? 'Sí' : 'No';
+            $status = $validation['passed'] ? '🟢' : '🔴';
             $color = $validation['passed'] ? 'black' : 'red';
-            $this->content->text .= "<span style='color: $color;'>{$validation['name']}: $status</span><br>";
+            $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
         }
+        
+
+        $this->content->text .= "<h4>Libro de Calificaciones</h4>";
+        $validationsgradebook = $this->performs_validations_gradebook();
+
+        // Listado de validaciones
+        foreach ($validationsgradebook as $validation) {
+            $status = $validation['passed'] ? '🟢' : '🔴';
+            $color = $validation['passed'] ? 'black' : 'red';
+            $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+        }
+
+
+
+        $this->content->text .= "<h4>Cuestionarios</h4>";
+        $groups = groups_get_all_groups($COURSE->id);
+
+        $valid_group_count = 0;
+        $valid_groups = [];
+        foreach ($groups as $group) {
+            if (preg_match('/^#\d{5}#$/', $group->name)) {
+                $valid_group_count++;
+                $valid_groups[] = $group;
+            }
+        }
+        // print_r($valid_groups);
+        foreach ($valid_groups as $group) {
+            // $this->content->text .= "<br>Grupo: {$group->name}<br>";
+            $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
+            $this->content->text .= "<strong>Cuestionario: {$quiz->name}</strong><br>";
+            
+            // Validación del límite de tiempo
+            $validationstimelimit = $this->timelimitvalidation($quiz);
+            foreach ($validationstimelimit as $validation) {
+                $status = $validation['passed'] ? '🟢' : '🔴';
+                $color = $validation['passed'] ? 'black' : 'red';
+                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            }
+
+            // Validación: verificar que todas las preguntas estén en una misma página
+            $validationsquestionperpage = $this->questionperpagevalidation($quiz);
+            foreach ($validationsquestionperpage as $validation) {
+                $status = $validation['passed'] ? '🟢' : '🔴';
+                $color = $validation['passed'] ? 'black' : 'red';
+                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            }
+
+            // Validación: verificar que el cuestionario tenga restricciones de grupo
+            $validationsgrouprestiction = $this->grouprestictionvalidation($quiz, $group);
+            print_r($validationsgrouprestiction);
+            foreach ($validationsgrouprestiction as $validation) {
+                $status = $validation['passed'] ? '🟢' : '🔴';
+                $color = $validation['passed'] ? 'black' : 'red';
+                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            }
+
+
+            // $validationsquiz = $this->perform_validations_quiz($quiz);
+            // Listado de validaciones
+            // print_r($validationsquiz);
+            // foreach ($validationsquiz as $validation) {
+            //     print_r($validation['name']);
+            //     $status = $validation['passed'] ? '🟢' : '🔴';
+            //     $color = $validation['passed'] ? 'black' : 'red';
+            //     $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            // }
+        }
+        
 
         $this->content->footer = '';
 
         return $this->content;
+    }
+
+    private function questionperpagevalidation($quiz) {
+        $validations = [];
+        // Validación: verificar que todas las preguntas estén en una misma página
+        if ($quiz->questionsperpage != 0) {
+            $validations[] = [
+                'name' => 'Preguntas en una sola página',
+                'passed' => false
+            ];
+        } else {
+            $validations[] = [
+                'name' => 'Preguntas en una sola página',
+                'passed' => true
+            ];
+        }
+        return $validations;
+    }
+
+    private function timelimitvalidation($quiz) {
+        $validations = [];
+        if ($quiz->timelimit == 5400) { // 5400 segundos = 90 minutos
+            $validations[] = [
+                'name' => 'Límite de Tiempo del Cuestionario',
+                'passed' => true
+            ];
+        } else {
+            $validations[] = [
+                'name' => 'Límite de Tiempo del Cuestionario',
+                'passed' => false
+            ];
+        }
+        return $validations;
     }
 
     private function perform_validations() {
@@ -67,8 +169,6 @@ class block_validador extends block_base {
 
         $validations = [];
 
-
-
         // Validación: verificar que existan grupos en el curso
         $groups = groups_get_all_groups($COURSE->id);
         $groups_exist = !empty($groups);
@@ -76,14 +176,6 @@ class block_validador extends block_base {
             'name' => 'Grupos',
             'passed' => $groups_exist
         ];
-
-
-
-
-
-
-
-
 
         // Validación: verificar que haya al menos dos grupos con nombres válidos
         $valid_group_count = 0;
@@ -100,10 +192,6 @@ class block_validador extends block_base {
             'passed' => $valid_group_names
         ];
 
-
-
-
-
         // Validación: verificar que cada grupo válido tenga un cuestionario correspondiente
         $quizzes_valid = true;
         // Vamos a validar todos los cuestionarios.
@@ -111,62 +199,8 @@ class block_validador extends block_base {
             // Buscar el cuestionario cuyo nombre es igual al nombre del grupo
             $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
             if ($quiz) {
-                // Validación del límite de tiempo
-                if ($quiz->timelimit != 5400) { // 5400 segundos = 90 minutos
-                    $quizzes_valid = false;
-                }
-                $validations[] = [
-                    'name' => 'Límite de Tiempo del Cuestionario',
-                    'passed' => $quiz->timelimit == 5400
-                ];
-
-                // Validación: verificar que todas las preguntas estén en una misma página
-                if ($quiz->questionsperpage != 0) {
-                    $quizzes_valid = false;
-                }
-                $validations[] = [
-                    'name' => 'Preguntas en una sola página',
-                    'passed' => $quiz->questionsperpage == 0
-                ];
-
-                // Validación: verificar que el cuestionario tenga restricciones de grupo
-
-                $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
-                if ($cm && $cm->availability) {
-                    $availability = json_decode($cm->availability);
-                    if ($this->has_group_restriction($availability, $group->id)) {
-                        if ($this->check_showc($availability)) {
-                            $quizzes_valid = false;
-                            $validations[] = [
-                                'name' => 'Restricciones de Grupo',
-                                'passed' => false,
-                                'message' => 'El cuestionario tiene restricciones de grupo incorrectas'
-                            ];
-                        }
-                        continue;
-                    } else {
-                        $quizzes_valid = false;
-                        $validations[] = [
-                            'name' => 'Restricciones de Grupo',
-                            'passed' => false,
-                            'message' => 'El cuestionario no tiene restricciones de grupo adecuadas'
-                        ];
-                    }
-                } else {
-                    // El cuestionario no tiene restricciones de acceso
-                    $quizzes_valid = false;
-                    $validations[] = [
-                        'name' => 'Restricciones de Grupo',
-                        'passed' => false,
-                        'message' => 'El cuestionario no tiene restricciones de acceso'
-                    ];
-                }
-
-
-
-
-
-
+                
+                // $this->validate_quiz($quiz, $group);
 
             } else {
                 // No se encontró un cuestionario con el nombre del grupo
@@ -176,9 +210,10 @@ class block_validador extends block_base {
         }
         $validations[] = [
             // 'name' => 'Cuestionarios por Grupo',
-            'name' => 'Todos los grupos tienen cuestionarios válidos',
+            'name' => 'Todos los grupos tienen cuestionarios',
             'passed' => $quizzes_valid
         ];
+
 
         // Validación: verificar que cada cuestionario tenga un área de texto y medios en la misma semana
         $resources_valid = true;
@@ -212,43 +247,109 @@ class block_validador extends block_base {
                 break;
             }
         }
-        $validations[] = [
-            'name' => 'Recursos de Texto y Medios',
-            'passed' => $labels_valid
-        ];
 
 
+        return $validations;
+    }
 
 
-
-
-
-
-
-
-
-
-
-
+    private function performs_validations_gradebook() {
+        global $COURSE, $DB, $CFG;
         // Validación: verificar la estructura del libro de calificaciones
         $gradebook_valid = true;
         // Obtener la categoría "Exámen final"
         $exam_final_category = $DB->get_record('grade_categories', ['courseid' => $COURSE->id, 'fullname' => 'Examen final']);
-        if ($exam_final_category) {
+        if ($exam_final_category == null) {
             // Verificar que el método de calificación sea "Calificación más alta" (GRADE_AGGREGATE_MAX)
 
             /// >>>>>>>>>>>>>> AQUI VA LA VALIDACIÓN DEL LIBRO DE CALIFICACIONES <<<<<<<<<<<<<<
-
-            
         } else {
             $gradebook_valid = false;
         }
 
-        $validations[] = [
-            'name' => 'Estructura del Libro de Calificaciones',
+        $validationsgradebook[] = [
+            'name' => 'Hay categoría Examen final',
             'passed' => $gradebook_valid
         ];
 
+        return $validationsgradebook;
+    }
+
+    private function grouprestictionvalidation($quiz, $group) {
+        global $DB, $COURSE;
+        $validations = [];
+        if ($quiz) {
+            // Validación: verificar que el cuestionario tenga restricciones de grupo
+            $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
+            if ($cm && $cm->availability) {
+                $availability = json_decode($cm->availability);
+                if ($this->has_group_restriction($availability, $group->id)) {
+                    if ($this->check_showc($availability)) {
+                        $quizzes_valid = false;
+                        $validations[] = [
+                            'name' => 'Restricciones de Grupo',
+                            'passed' => false,
+                        ];
+                    }
+                } else {
+                    $quizzes_valid = false;
+                    $validations[] = [
+                        'name' => 'Restricciones de Grupo',
+                        'passed' => false,
+                    ];
+                }
+            } else {
+                // El cuestionario no tiene restricciones de acceso
+                $quizzes_valid = false;
+                $validations[] = [
+                    'name' => 'Restricciones de Grupo',
+                    'passed' => false,
+                ];
+            }
+        }      
+        return $validations;
+    }
+
+    private function perform_validations_quiz($quiz) {
+        global $DB, $COURSE;
+        if ($quiz) {
+            echo "<br>Validando cuestionario {$quiz->name}<br>";
+            $validations = [];
+            $quizzes_valid = true;
+        
+        
+                // Validación: verificar que el cuestionario tenga restricciones de grupo
+                // $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
+                // if ($cm && $cm->availability) {
+                //     $availability = json_decode($cm->availability);
+                //     if ($this->has_group_restriction($availability, $group->id)) {
+                //         if ($this->check_showc($availability)) {
+                //             $quizzes_valid = false;
+                //             $validations[] = [
+                //                 'name' => 'Restricciones de Grupo',
+                //                 'passed' => false,
+                //                 'message' => 'El cuestionario tiene restricciones de grupo incorrectas'
+                //             ];
+                //         }
+                //     } else {
+                //         $quizzes_valid = false;
+                //         $validations[] = [
+                //             'name' => 'Restricciones de Grupo',
+                //             'passed' => false,
+                //             'message' => 'El cuestionario no tiene restricciones de grupo adecuadas'
+                //         ];
+                //     }
+                // } else {
+                //     // El cuestionario no tiene restricciones de acceso
+                //     $quizzes_valid = false;
+                //     $validations[] = [
+                //         'name' => 'Restricciones de Grupo',
+                //         'passed' => false,
+                //         'message' => 'El cuestionario no tiene restricciones de acceso'
+                //     ];
+                // }
+        }      
+        // return [$quizzes_valid, $validations];
         return $validations;
     }
 
@@ -291,52 +392,4 @@ class block_validador extends block_base {
         }
         return true;
     }
-
-    // public function validate_specific_quiz($quizid) {
-    //     global $DB;
-
-    //     // Obtener el cuestionario por su ID
-    //     $quiz = $DB->get_record('quiz', ['id' => $quizid]);
-    //     if (!$quiz) {
-    //         return [
-    //             'name' => 'Cuestionario Específico',
-    //             'passed' => false,
-    //             'message' => 'El cuestionario no existe'
-    //         ];
-    //     }
-
-    //     // Validación del límite de tiempo
-    //     if ($quiz->timelimit != 5400) { // 5400 segundos = 90 minutos
-    //         return [
-    //             'name' => 'Cuestionario Específico',
-    //             'passed' => false,
-    //             'message' => 'El límite de tiempo no es de 90 minutos'
-    //         ];
-    //     }
-
-    //     // Validación de restricciones de grupo
-    //     $cm = get_coursemodule_from_instance('quiz', $quiz->id, $quiz->course);
-    //     if ($cm && $cm->availability) {
-    //         $availability = json_decode($cm->availability);
-    //         if (!$this->has_group_restriction($availability, $quiz->groupid)) {
-    //             return [
-    //                 'name' => 'Cuestionario Específico',
-    //                 'passed' => false,
-    //                 'message' => 'El cuestionario no tiene restricciones de grupo adecuadas'
-    //             ];
-    //         }
-    //     } else {
-    //         return [
-    //             'name' => 'Cuestionario Específico',
-    //             'passed' => false,
-    //             'message' => 'El cuestionario no tiene restricciones de acceso'
-    //         ];
-    //     }
-
-    //     return [
-    //         'name' => 'Cuestionario Específico',
-    //         'passed' => true,
-    //         'message' => 'El cuestionario cumple con todas las validaciones'
-    //     ];
-    // }
 }
