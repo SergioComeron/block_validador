@@ -56,7 +56,6 @@ class block_validador extends block_base {
             $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
         }
         
-
         $this->content->text .= "<h4>Libro de Calificaciones</h4>";
         $validationsgradebook = $this->performs_validations_gradebook();
 
@@ -66,8 +65,6 @@ class block_validador extends block_base {
             $color = $validation['passed'] ? 'black' : 'red';
             $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
         }
-
-
 
         $this->content->text .= "<h4>Cuestionarios</h4>";
         $groups = groups_get_all_groups($COURSE->id);
@@ -104,29 +101,219 @@ class block_validador extends block_base {
 
             // Validación: verificar que el cuestionario tenga restricciones de grupo
             $validationsgrouprestiction = $this->grouprestictionvalidation($quiz, $group);
-            print_r($validationsgrouprestiction);
             foreach ($validationsgrouprestiction as $validation) {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
             }
 
+            // Validacion: verificar label
+            $validationslabel = $this->labelvalidation($quiz);
+            foreach ($validationslabel as $validation) {
+                $status = $validation['passed'] ? '🟢' : '🔴';
+                $color = $validation['passed'] ? 'black' : 'red';
+                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            }
 
-            // $validationsquiz = $this->perform_validations_quiz($quiz);
-            // Listado de validaciones
-            // print_r($validationsquiz);
-            // foreach ($validationsquiz as $validation) {
-            //     print_r($validation['name']);
-            //     $status = $validation['passed'] ? '🟢' : '🔴';
-            //     $color = $validation['passed'] ? 'black' : 'red';
-            //     $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
-            // }
+            // Validacion: verificar nota de aprobado
+            $validationsgradetopass = $this->gradetopass($quiz);
+            foreach ($validationsgradetopass as $validation) {
+                $status = $validation['passed'] ? '🟢' : '🔴';
+                $color = $validation['passed'] ? 'black' : 'red';
+                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            }
+
+            // Validacion: verificar categoria de calificación
+            $validationsquizgradecategory = $this->validate_quiz_grade_category($quiz);
+            foreach ($validationsquizgradecategory as $validation) {
+                $status = $validation['passed'] ? '🟢' : '🔴';
+                $color = $validation['passed'] ? 'black' : 'red';
+                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            }
+
+            // Validacion: verificar envio automatico
+            $validationsquizautosubmit = $this->validate_quiz_auto_submit($quiz);
+            foreach ($validationsquizautosubmit as $validation) {
+                $status = $validation['passed'] ? '🟢' : '🔴';
+                $color = $validation['passed'] ? 'black' : 'red';
+                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            }
+
+            // Validacion: verificar opciones de revisión
+            $validationsquizreviewoptions = $this->validate_quiz_review_options($quiz);
+            foreach ($validationsquizreviewoptions as $validation) {
+                $status = $validation['passed'] ? '🟢' : '🔴';
+                $color = $validation['passed'] ? 'black' : 'red';
+                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            }
         }
-        
-
         $this->content->footer = '';
 
         return $this->content;
+    }
+
+    private function validate_quiz_review_options($quiz) {
+        $validations = [];
+        $review_options_valid = true;
+    
+        // Obtener las opciones de revisión del cuestionario
+        $review_options_during = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::DURING);
+        $review_options_immediately = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::IMMEDIATELY_AFTER);
+        $review_options_open = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::LATER_WHILE_OPEN);
+        $review_options_closed = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::AFTER_CLOSE);
+    
+        // Verificar que solo la opción de ver el intento esté activada durante el intento
+        if ($review_options_during->attempt != \mod_quiz\question\display_options::VISIBLE ||
+            $review_options_during->correctness != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_during->marks != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_during->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_during->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_during->overallfeedback != \mod_quiz\question\display_options::HIDDEN) {
+            $review_options_valid = false;
+        }
+
+        // Verificar las opciones de revisión inmediatamente después del intento
+        if ($review_options_immediately->attempt != \mod_quiz\question\display_options::VISIBLE ||
+            $review_options_immediately->correctness != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_immediately->marks != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_immediately->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_immediately->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_immediately->overallfeedback != \mod_quiz\question\display_options::HIDDEN) {
+            $review_options_valid = false;
+        }
+
+        // Verificar las opciones de revisión mientras el cuestionario está abierto
+        if ($review_options_open->attempt != \mod_quiz\question\display_options::VISIBLE ||
+            $review_options_open->correctness != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_open->marks != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_open->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_open->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_open->overallfeedback != \mod_quiz\question\display_options::HIDDEN) {
+            $review_options_valid = false;
+        }
+
+        // Verificar las opciones de revisión después de cerrar el cuestionario
+        if ($review_options_closed->attempt != \mod_quiz\question\display_options::VISIBLE ||
+            $review_options_closed->correctness != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_closed->marks != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_closed->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_closed->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
+            $review_options_closed->overallfeedback != \mod_quiz\question\display_options::HIDDEN) {
+            $review_options_valid = false;
+        }
+    
+        $validations[] = [
+            'name' => 'Opciones de Revisión del Cuestionario',
+            'passed' => $review_options_valid
+        ];
+    
+        return $validations;
+    }
+
+    private function validate_quiz_auto_submit($quiz) {
+        $validations = [];
+        $auto_submit = false;
+
+        // Validación: verificar que el cuestionario esté configurado para enviar automáticamente al finalizar el tiempo
+        if ($quiz->overduehandling == 'autosubmit') {
+            $auto_submit = true;
+        }
+
+        $validations[] = [
+            'name' => 'Envío Automático al Terminar el Tiempo',
+            'passed' => $auto_submit
+        ];
+
+        return $validations;
+    }
+
+    private function validate_quiz_grade_category($quiz) {
+        global $DB;
+
+        $validations = [];
+        $category_valid = false;
+
+        // Obtener la categoría de calificación del cuestionario
+        $grade_item = $DB->get_record('grade_items', [
+            'iteminstance' => $quiz->id,
+            'itemmodule' => 'quiz'
+        ]);
+
+        if ($grade_item) {
+            $category = $DB->get_record('grade_categories', ['id' => $grade_item->categoryid]);
+            if ($category && $category->fullname == 'Examen online') {
+                $category_valid = true;
+            }
+        }
+
+        $validations[] = [
+            'name' => 'Categoría de Calificación Examen online',
+            'passed' => $category_valid
+        ];
+
+        return $validations;
+    }
+
+    private function gradetopass($quiz) {
+        global $DB;
+    
+        $validations = [];
+    
+        // Obtener la nota de aprobado desde la tabla grade_items.
+        $gradeitem = $DB->get_record('grade_items', [
+            'iteminstance' => $quiz->id,
+            'itemmodule' => 'quiz'
+        ]);
+    
+        if ($gradeitem && $gradeitem->gradepass == 5) {
+            $validations[] = [
+                'name' => 'Nota de Aprobado',
+                'passed' => true
+            ];
+        } else {
+            $validations[] = [
+                'name' => 'Nota de Aprobado',
+                'passed' => false
+            ];
+        }
+    
+        return $validations;
+    }
+
+    private function labelvalidation($quiz) {
+        global $COURSE, $DB;
+        $validations = [];
+        $labels_valid = false;
+         // Validación: verificar que cada cuestionario tenga un área de texto y medios en la misma semana
+        $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
+        $sectionquiz = $DB->get_record_sql('SELECT section FROM {course_modules} WHERE id = ?', [$cm->id]);
+        $section = $DB->get_record('course_sections', ['id' => $sectionquiz->section]);
+        $sequence = explode(',', $section->sequence);
+        $label_found = false;
+        foreach ($sequence as $cmid) {
+            $cm = get_coursemodule_from_id(null, $cmid);
+            if ($cm && $cm->modname == 'label') {
+                $label = $DB->get_record('label', ['id' => $cm->instance]);
+                if ($label) {
+                    // Eliminar etiquetas HTML del texto del label.
+                    $intro_text = strip_tags($label->intro);
+
+                    // Texto a buscar, sin formato.
+                    $expected_text = 'Si tiene problemas técnicos para acceder al examen, contacte por correo electrónico a la siguiente dirección: innovación@udima.es.';
+
+                    // Comparar ignorando formato.
+                    if (strpos($intro_text, $expected_text) !== false) {
+                        $labels_valid = true;
+                    }
+                }
+            }
+        }
+
+        $validations[] = [
+            'name' => 'Recursos de Texto y Medios',
+            'passed' => $labels_valid
+        ];
+        return $validations;
     }
 
     private function questionperpagevalidation($quiz) {
@@ -214,7 +401,6 @@ class block_validador extends block_base {
             'passed' => $quizzes_valid
         ];
 
-
         // Validación: verificar que cada cuestionario tenga un área de texto y medios en la misma semana
         $resources_valid = true;
         foreach ($valid_groups as $group) {
@@ -247,8 +433,6 @@ class block_validador extends block_base {
                 break;
             }
         }
-
-
         return $validations;
     }
 
@@ -277,79 +461,30 @@ class block_validador extends block_base {
 
     private function grouprestictionvalidation($quiz, $group) {
         global $DB, $COURSE;
-        $validations = [];
-        if ($quiz) {
-            // Validación: verificar que el cuestionario tenga restricciones de grupo
-            $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
-            if ($cm && $cm->availability) {
-                $availability = json_decode($cm->availability);
-                if ($this->has_group_restriction($availability, $group->id)) {
-                    if ($this->check_showc($availability)) {
-                        $quizzes_valid = false;
-                        $validations[] = [
-                            'name' => 'Restricciones de Grupo',
-                            'passed' => false,
-                        ];
-                    }
-                } else {
-                    $quizzes_valid = false;
-                    $validations[] = [
-                        'name' => 'Restricciones de Grupo',
-                        'passed' => false,
-                    ];
+        // $validations = [];
+        $conrestriccion = false;
+        // Validación: verificar que el cuestionario tenga restricciones de grupo
+        $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
+        if ($cm && $cm->availability) {
+            $availability = json_decode($cm->availability);
+            // print_r($availability);
+            if ($this->has_group_restriction($availability, $group->id)) {
+                // echo "Restricción de grupo encontrada";
+                if ($this->check_showc($availability)) {
+                    // echo "Invisible";
+                    $conrestriccion = true;
                 }
             } else {
-                // El cuestionario no tiene restricciones de acceso
-                $quizzes_valid = false;
-                $validations[] = [
-                    'name' => 'Restricciones de Grupo',
-                    'passed' => false,
-                ];
+                $conrestriccion = false;
             }
-        }      
-        return $validations;
-    }
-
-    private function perform_validations_quiz($quiz) {
-        global $DB, $COURSE;
-        if ($quiz) {
-            echo "<br>Validando cuestionario {$quiz->name}<br>";
-            $validations = [];
-            $quizzes_valid = true;
-        
-        
-                // Validación: verificar que el cuestionario tenga restricciones de grupo
-                // $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
-                // if ($cm && $cm->availability) {
-                //     $availability = json_decode($cm->availability);
-                //     if ($this->has_group_restriction($availability, $group->id)) {
-                //         if ($this->check_showc($availability)) {
-                //             $quizzes_valid = false;
-                //             $validations[] = [
-                //                 'name' => 'Restricciones de Grupo',
-                //                 'passed' => false,
-                //                 'message' => 'El cuestionario tiene restricciones de grupo incorrectas'
-                //             ];
-                //         }
-                //     } else {
-                //         $quizzes_valid = false;
-                //         $validations[] = [
-                //             'name' => 'Restricciones de Grupo',
-                //             'passed' => false,
-                //             'message' => 'El cuestionario no tiene restricciones de grupo adecuadas'
-                //         ];
-                //     }
-                // } else {
-                //     // El cuestionario no tiene restricciones de acceso
-                //     $quizzes_valid = false;
-                //     $validations[] = [
-                //         'name' => 'Restricciones de Grupo',
-                //         'passed' => false,
-                //         'message' => 'El cuestionario no tiene restricciones de acceso'
-                //     ];
-                // }
-        }      
-        // return [$quizzes_valid, $validations];
+        } else {
+            // El cuestionario no tiene restricciones de acceso
+            $conrestriccion = false;
+        }    
+        $validations[] = [
+            'name' => 'Restricciones de Grupo',
+            'passed' => $conrestriccion,
+        ];  
         return $validations;
     }
 
@@ -369,9 +504,9 @@ class block_validador extends block_base {
 
     private function check_showc($availability) {
         if (!isset($availability->showc) || (isset($availability->showc[0]) && !$availability->showc[0] == 1)) {
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     private function validate_quiz_time_limit($valid_groups) {
