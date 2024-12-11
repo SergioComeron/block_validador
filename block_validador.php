@@ -31,25 +31,22 @@ class block_validador extends block_base {
         if ($this->content !== null) {
             return $this->content;
         }
-
         global $COURSE, $DB, $CFG;
 
         // Contenido del bloque
         $this->content = new stdClass();
-        
-        // Realizar las validaciones
-        $validations = $this->perform_validations();
-        $validations_passed = array_reduce($validations, function($carry, $item) {
-            return $carry && $item['passed'];
-        }, true);
 
-        // Mostrar el emoji y el mensaje correspondiente según las validaciones
-        $emoji = $validations_passed ? '✅' : '❌';
-        $message = $validations_passed ? 'Curso Validado' : 'Curso No Validado';
-        $message = "<span style='font-size: 2em;'>$message</span>";
-        $this->content->text = "$emoji $message<br>";
+        // Obtener arrays de validaciones
+        $validations = $this->perform_validations();
+        $validationsgradebook = $this->performs_validations_gradebook();
+        $validationssmowl = $this->perform_validations_smowl();
+
+        $validations_passed = true;
+
         $this->content->text .= "<h4>Grupos</h4>";
         // Listado de validaciones
+
+
         foreach ($validations as $validation) {
             $status = $validation['passed'] ? '🟢' : '🔴';
             $color = $validation['passed'] ? 'black' : 'red';
@@ -57,13 +54,23 @@ class block_validador extends block_base {
         }
         
         $this->content->text .= "<h4>Libro de Calificaciones</h4>";
-        $validationsgradebook = $this->performs_validations_gradebook();
 
         // Listado de validaciones
         foreach ($validationsgradebook as $validation) {
             $status = $validation['passed'] ? '🟢' : '🔴';
             $color = $validation['passed'] ? 'black' : 'red';
             $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            $validations_passed = $validations_passed && $validation['passed'];
+        }
+
+        $this->content->text .= "<h4>Smowl</h4>";
+
+        // Listado de validaciones
+        foreach ($validationssmowl as $validation) {
+            $status = $validation['passed'] ? '🟢' : '🔴';
+            $color = $validation['passed'] ? 'black' : 'red';
+            $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            $validations_passed = $validations_passed && $validation['passed'];
         }
 
         $this->content->text .= "<h4>Cuestionarios</h4>";
@@ -79,7 +86,6 @@ class block_validador extends block_base {
         }
         // print_r($valid_groups);
         foreach ($valid_groups as $group) {
-            // $this->content->text .= "<br>Grupo: {$group->name}<br>";
             $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
             $this->content->text .= "<strong>Cuestionario: {$quiz->name}</strong><br>";
             
@@ -89,6 +95,7 @@ class block_validador extends block_base {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $validations_passed = $validations_passed && $validation['passed'];
             }
 
             // Validación: verificar que todas las preguntas estén en una misma página
@@ -97,6 +104,7 @@ class block_validador extends block_base {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $validations_passed = $validations_passed && $validation['passed'];
             }
 
             // Validación: verificar que el cuestionario tenga restricciones de grupo
@@ -105,6 +113,7 @@ class block_validador extends block_base {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $validations_passed = $validations_passed && $validation['passed'];
             }
 
             // Validacion: verificar label
@@ -113,6 +122,8 @@ class block_validador extends block_base {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $validations_passed = $validations_passed && $validation['passed'];
+
             }
 
             // Validacion: verificar nota de aprobado
@@ -121,6 +132,7 @@ class block_validador extends block_base {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $validations_passed = $validations_passed && $validation['passed'];
             }
 
             // Validacion: verificar categoria de calificación
@@ -129,6 +141,7 @@ class block_validador extends block_base {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $validations_passed = $validations_passed && $validation['passed'];
             }
 
             // Validacion: verificar envio automatico
@@ -137,6 +150,7 @@ class block_validador extends block_base {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $validations_passed = $validations_passed && $validation['passed'];
             }
 
             // Validacion: verificar opciones de revisión
@@ -145,9 +159,17 @@ class block_validador extends block_base {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $validations_passed = $validations_passed && $validation['passed'];
             }
         }
-        $this->content->footer = '';
+
+        // Finalmente, mostrar el estado global
+        $emoji = $validations_passed ? '✅' : '❌';
+        $message = $validations_passed ? 'Curso Validado' : 'Curso No Validado';
+        $message = "<span style='font-size: 2em;'>$message</span>";
+
+        // Añadir el mensaje al inicio (o al final)
+        $this->content->text = "$emoji $message<br>" . $this->content->text;
 
         return $this->content;
     }
@@ -161,7 +183,7 @@ class block_validador extends block_base {
         $review_options_immediately = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::IMMEDIATELY_AFTER);
         $review_options_open = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::LATER_WHILE_OPEN);
         $review_options_closed = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::AFTER_CLOSE);
-    
+
         // Verificar que solo la opción de ver el intento esté activada durante el intento
         if ($review_options_during->attempt != \mod_quiz\question\display_options::VISIBLE ||
             $review_options_during->correctness != \mod_quiz\question\display_options::HIDDEN ||
@@ -173,7 +195,7 @@ class block_validador extends block_base {
         }
 
         // Verificar las opciones de revisión inmediatamente después del intento
-        if ($review_options_immediately->attempt != \mod_quiz\question\display_options::VISIBLE ||
+        if ($review_options_immediately->attempt != \mod_quiz\question\display_options::HIDDEN ||
             $review_options_immediately->correctness != \mod_quiz\question\display_options::HIDDEN ||
             $review_options_immediately->marks != \mod_quiz\question\display_options::HIDDEN ||
             $review_options_immediately->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
@@ -183,7 +205,7 @@ class block_validador extends block_base {
         }
 
         // Verificar las opciones de revisión mientras el cuestionario está abierto
-        if ($review_options_open->attempt != \mod_quiz\question\display_options::VISIBLE ||
+        if ($review_options_open->attempt != \mod_quiz\question\display_options::HIDDEN ||
             $review_options_open->correctness != \mod_quiz\question\display_options::HIDDEN ||
             $review_options_open->marks != \mod_quiz\question\display_options::HIDDEN ||
             $review_options_open->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
@@ -193,7 +215,7 @@ class block_validador extends block_base {
         }
 
         // Verificar las opciones de revisión después de cerrar el cuestionario
-        if ($review_options_closed->attempt != \mod_quiz\question\display_options::VISIBLE ||
+        if ($review_options_closed->attempt != \mod_quiz\question\display_options::HIDDEN ||
             $review_options_closed->correctness != \mod_quiz\question\display_options::HIDDEN ||
             $review_options_closed->marks != \mod_quiz\question\display_options::HIDDEN ||
             $review_options_closed->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
@@ -207,6 +229,31 @@ class block_validador extends block_base {
             'passed' => $review_options_valid
         ];
     
+        return $validations;
+    }
+
+    private function perform_validations_smowl() {
+        global $COURSE, $DB;
+
+        $validations = [];
+        $smowl_block_exists = false;
+
+        // Obtener todos los bloques del curso
+        $blocks = $DB->get_records('block_instances', ['parentcontextid' => context_course::instance($COURSE->id)->id]);
+
+        // Verificar si existe un bloque Smowl en el curso
+        foreach ($blocks as $block) {
+            if ($block->blockname == 'smowl') {
+                $smowl_block_exists = true;
+                break;
+            }
+        }
+
+        $validations[] = [
+            'name' => 'Bloque Smowl',
+            'passed' => $smowl_block_exists
+        ];
+
         return $validations;
     }
 
@@ -349,20 +396,17 @@ class block_validador extends block_base {
         return $validations;
     }
 
+    
+
+    
+
     private function perform_validations() {
         global $COURSE, $DB, $CFG;
 
-        require_once($CFG->libdir.'/gradelib.php'); // Necesario para usar GRADE_AGGREGATE_MAX
-
         $validations = [];
 
-        // Validación: verificar que existan grupos en el curso
         $groups = groups_get_all_groups($COURSE->id);
-        $groups_exist = !empty($groups);
-        $validations[] = [
-            'name' => 'Grupos',
-            'passed' => $groups_exist
-        ];
+
 
         // Validación: verificar que haya al menos dos grupos con nombres válidos
         $valid_group_count = 0;
@@ -375,7 +419,7 @@ class block_validador extends block_base {
         }
         $valid_group_names = $valid_group_count >= 2;
         $validations[] = [
-            'name' => 'Nombres de Grupos Válidos',
+            'name' => 'Hay grupos válidos',
             'passed' => $valid_group_names
         ];
 
@@ -396,43 +440,9 @@ class block_validador extends block_base {
             }
         }
         $validations[] = [
-            // 'name' => 'Cuestionarios por Grupo',
             'name' => 'Todos los grupos tienen cuestionarios',
             'passed' => $quizzes_valid
         ];
-
-        // Validación: verificar que cada cuestionario tenga un área de texto y medios en la misma semana
-        $resources_valid = true;
-        foreach ($valid_groups as $group) {
-            // Buscar el cuestionario cuyo nombre es igual al nombre del grupo
-            $quiz = $DB->get_record('quiz', ['course' => $COURSE->id, 'name' => $group->name]);
-            if ($quiz) {
-                $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
-                $sectionquiz = $DB->get_record_sql('SELECT section FROM {course_modules} WHERE id = ?', [$cm->id]);
-                $section = $DB->get_record('course_sections', ['id' => $sectionquiz->section]);
-                $sequence = explode(',', $section->sequence);
-                $label_found = false;
-
-                foreach ($sequence as $cmid) {
-                    $cm = get_coursemodule_from_id(null, $cmid);
-                    if ($cm && $cm->modname == 'label') {
-                        $label = $DB->get_record('label', ['id' => $cm->instance]);
-                        if ($label && strpos($label->intro, 'Si tiene problemas técnicos para acceder al examen, contacte por correo electrónico a la siguiente dirección:') !== false) {
-                            $label_found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!$label_found) {
-                    $quizzes_valid = false;
-                    break;
-                }
-            } else {
-                $labels_valid = false;
-                break;
-            }
-        }
         return $validations;
     }
 
@@ -490,7 +500,6 @@ class block_validador extends block_base {
 
     private function has_group_restriction($availability, $groupid) {
         if (isset($availability->type) && $availability->type == 'group' && isset($availability->id) && $availability->id == $groupid) {
-            // echo "<br>Restricción de grupo encontrada<br>";
             return true;
         } elseif (isset($availability->op) && isset($availability->c)) {
             foreach ($availability->c as $condition) {
