@@ -28,10 +28,20 @@ class block_validador extends block_base {
     }
 
     public function get_content() {
+        global $COURSE, $DB, $CFG;
+
         if ($this->content !== null) {
             return $this->content;
         }
-        global $COURSE, $DB, $CFG;
+
+        // Verificar la capacidad:
+        if (!has_capability('block/validador:view', $this->context)) {
+            // Si el usuario no tiene la capacidad, no mostrar nada.
+            // Podrías retornar vacío o un mensaje, según prefieras.
+            $this->content = new stdClass();
+            $this->content->text = '';
+            return $this->content;
+        }
 
         // Contenido del bloque
         $this->content = new stdClass();
@@ -94,7 +104,7 @@ class block_validador extends block_base {
             foreach ($validationstimelimit as $validation) {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
-                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $this->content->text .= "<span style='color: $color;' title='El tiempo deben ser 90 minutos;'>$status{$validation['name']}</span><br>";
                 $validations_passed = $validations_passed && $validation['passed'];
             }
 

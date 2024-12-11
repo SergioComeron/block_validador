@@ -33,4 +33,13 @@
             'editingteacher' => CAP_ALLOW,
         ],
     ],
+    'block/validador:view' => array(
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_BLOCK,
+        'archetypes' => array(
+            'editingteacher' => CAP_ALLOW, // Los profesores con edición la tienen permitida
+            'manager' => CAP_ALLOW
+        )
+    ),
 ];
