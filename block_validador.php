@@ -57,9 +57,86 @@ class block_validador extends block_base {
 
         // Obtener arrays de validaciones
         $validations = $this->perform_validations();
-        $validationsgradebook = $this->performs_validations_gradebook();
-        $validationssmowl = $this->perform_validations_smowl();
+        foreach ($validations as $validation) {
+            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['name']];
+            $existing = $DB->get_record('block_validador_results', $params);
 
+            $newpassed = $validation['passed'] ? 1 : 0;
+
+            // Si no existe el registro, lo insertamos
+            // Si existe, solo actualizamos si hubo un cambio en passed
+            if (!$existing) {
+                $record = new stdClass();
+                $record->courseid = $COURSE->id;
+                $record->validationname = $validation['name'];
+                $record->passed = $newpassed;
+                $record->timecreated = time();
+                $record->timemodified = time();
+                $DB->insert_record('block_validador_results', $record);
+            } else {
+                // Existe un resultado previo, verificar si cambió
+                if ($existing->passed != $newpassed) {
+                    $existing->passed = $newpassed;
+                    $existing->timemodified = time();
+                    $DB->update_record('block_validador_results', $existing);
+                }
+                // Si no cambió, no hacemos nada.
+            }
+        }
+        $validationsgradebook = $this->performs_validations_gradebook();
+        foreach ($validationsgradebook as $validation) {
+            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['name']];
+            $existing = $DB->get_record('block_validador_results', $params);
+
+            $newpassed = $validation['passed'] ? 1 : 0;
+
+            // Si no existe el registro, lo insertamos
+            // Si existe, solo actualizamos si hubo un cambio en passed
+            if (!$existing) {
+                $record = new stdClass();
+                $record->courseid = $COURSE->id;
+                $record->validationname = $validation['name'];
+                $record->passed = $newpassed;
+                $record->timecreated = time();
+                $record->timemodified = time();
+                $DB->insert_record('block_validador_results', $record);
+            } else {
+                // Existe un resultado previo, verificar si cambió
+                if ($existing->passed != $newpassed) {
+                    $existing->passed = $newpassed;
+                    $existing->timemodified = time();
+                    $DB->update_record('block_validador_results', $existing);
+                }
+                // Si no cambió, no hacemos nada.
+            }
+        }
+        $validationssmowl = $this->perform_validations_smowl();
+        foreach ($validations as $validation) {
+            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['name']];
+            $existing = $DB->get_record('block_validador_results', $params);
+        
+            $newpassed = $validation['passed'] ? 1 : 0;
+        
+            // Si no existe el registro, lo insertamos
+            // Si existe, solo actualizamos si hubo un cambio en passed
+            if (!$existing) {
+                $record = new stdClass();
+                $record->courseid = $COURSE->id;
+                $record->validationname = $validation['name'];
+                $record->passed = $newpassed;
+                $record->timecreated = time();
+                $record->timemodified = time();
+                $DB->insert_record('block_validador_results', $record);
+            } else {
+                // Existe un resultado previo, verificar si cambió
+                if ($existing->passed != $newpassed) {
+                    $existing->passed = $newpassed;
+                    $existing->timemodified = time();
+                    $DB->update_record('block_validador_results', $existing);
+                }
+                // Si no cambió, no hacemos nada.
+            }
+        }
         $validations_passed = true;
 
         $this->content->text .= "<h4>Grupos</h4>";
