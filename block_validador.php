@@ -27,6 +27,14 @@ class block_validador extends block_base {
         $this->title = get_string('pluginname', 'block_validador');
     }
 
+    public function applicable_formats() {
+        return [
+            'course' => true,   // Permitir solo en el contexto de curso.
+            'site' => false,    // No permitir en la página principal.
+            'my' => false       // No permitir en el área personal (My Moodle).
+        ];
+    }
+
     public function get_content() {
         global $COURSE, $DB, $CFG;
 
@@ -45,6 +53,7 @@ class block_validador extends block_base {
 
         // Contenido del bloque
         $this->content = new stdClass();
+        $this->content->text = '';
 
         // Obtener arrays de validaciones
         $validations = $this->perform_validations();
@@ -104,7 +113,7 @@ class block_validador extends block_base {
             foreach ($validationstimelimit as $validation) {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
-                $this->content->text .= "<span style='color: $color;' title='El tiempo deben ser 90 minutos;'>$status{$validation['name']}</span><br>";
+                $this->content->text .= "<span style='color: $color;' title='El tiempo deben ser 90 minutos'>$status{$validation['name']}</span><br>";
                 $validations_passed = $validations_passed && $validation['passed'];
             }
 
@@ -113,7 +122,7 @@ class block_validador extends block_base {
             foreach ($validationsquestionperpage as $validation) {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
-                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $this->content->text .= "<span style='color: $color;' title='Todas las preguntas en una única página'>$status{$validation['name']}</span><br>";
                 $validations_passed = $validations_passed && $validation['passed'];
             }
 
@@ -122,7 +131,7 @@ class block_validador extends block_base {
             foreach ($validationsgrouprestiction as $validation) {
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
-                $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+                $this->content->text .= "<span style='color: $color;' title='El cuestionario tiene restricción por grupo'>$status{$validation['name']}</span><br>";
                 $validations_passed = $validations_passed && $validation['passed'];
             }
 
