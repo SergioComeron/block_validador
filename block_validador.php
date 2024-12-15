@@ -442,8 +442,8 @@ class block_validador extends block_base {
                     $intro_text = strip_tags($label->intro);
 
                     // Texto a buscar, sin formato.
-                    $expected_text = 'Si tiene problemas técnicos para acceder al examen, contacte por correo electrónico a la siguiente dirección: innovación@udima.es.';
-
+                    $expected_text = 'Si tiene problemas técnicos para acceder al examen, contacte por correo electrónico a la siguiente dirección: innovacion@udima.es';
+                    echo ($intro_text).'<br>';
                     // Comparar ignorando formato.
                     if (strpos($intro_text, $expected_text) !== false) {
                         $labels_valid = true;
