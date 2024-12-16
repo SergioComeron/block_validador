@@ -55,10 +55,11 @@ class block_validador extends block_base {
         $this->content = new stdClass();
         $this->content->text = '';
 
-        // Obtener arrays de validaciones
-        $validations = $this->perform_validations();
-        foreach ($validations as $validation) {
-            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['name']];
+        $validations_passed = true;
+
+        $validations_gropupswithquizzes = $this->perform_validations_groupwithquizzes();
+        foreach ($validations_gropupswithquizzes as $validation) {
+            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['id']];
             $existing = $DB->get_record('block_validador_results', $params);
 
             $newpassed = $validation['passed'] ? 1 : 0;
@@ -68,7 +69,7 @@ class block_validador extends block_base {
             if (!$existing) {
                 $record = new stdClass();
                 $record->courseid = $COURSE->id;
-                $record->validationname = $validation['name'];
+                $record->validationname = $validation['id'];
                 $record->passed = $newpassed;
                 $record->timecreated = time();
                 $record->timemodified = time();
@@ -83,9 +84,10 @@ class block_validador extends block_base {
                 // Si no cambió, no hacemos nada.
             }
         }
+
         $validationsgradebook = $this->performs_validations_gradebook();
         foreach ($validationsgradebook as $validation) {
-            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['name']];
+            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['id']];
             $existing = $DB->get_record('block_validador_results', $params);
 
             $newpassed = $validation['passed'] ? 1 : 0;
@@ -95,7 +97,7 @@ class block_validador extends block_base {
             if (!$existing) {
                 $record = new stdClass();
                 $record->courseid = $COURSE->id;
-                $record->validationname = $validation['name'];
+                $record->validationname = $validation['id'];
                 $record->passed = $newpassed;
                 $record->timecreated = time();
                 $record->timemodified = time();
@@ -111,8 +113,36 @@ class block_validador extends block_base {
             }
         }
         $validationssmowl = $this->perform_validations_smowl();
-        foreach ($validations as $validation) {
-            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['name']];
+
+        $validationsgroups = $this->perform_validations_groups();
+        foreach ($validationsgroups as $validation) {
+            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['id']];
+            $existing = $DB->get_record('block_validador_results', $params);
+
+            $newpassed = $validation['passed'] ? 1 : 0;
+
+            // Si no existe el registro, lo insertamos
+            // Si existe, solo actualizamos si hubo un cambio en passed
+            if (!$existing) {
+                $record = new stdClass();
+                $record->courseid = $COURSE->id;
+                $record->validationname = $validation['id'];
+                $record->passed = $newpassed;
+                $record->timecreated = time();
+                $record->timemodified = time();
+                $DB->insert_record('block_validador_results', $record);
+            } else {
+                // Existe un resultado previo, verificar si cambió
+                if ($existing->passed != $newpassed) {
+                    $existing->passed = $newpassed;
+                    $existing->timemodified = time();
+                    $DB->update_record('block_validador_results', $existing);
+                }
+                // Si no cambió, no hacemos nada.
+            }
+
+
+            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['id']];
             $existing = $DB->get_record('block_validador_results', $params);
         
             $newpassed = $validation['passed'] ? 1 : 0;
@@ -122,7 +152,7 @@ class block_validador extends block_base {
             if (!$existing) {
                 $record = new stdClass();
                 $record->courseid = $COURSE->id;
-                $record->validationname = $validation['name'];
+                $record->validationname = $validation['id'];
                 $record->passed = $newpassed;
                 $record->timecreated = time();
                 $record->timemodified = time();
@@ -137,13 +167,19 @@ class block_validador extends block_base {
                 // Si no cambió, no hacemos nada.
             }
         }
-        $validations_passed = true;
+
+
 
         $this->content->text .= "<h4>Grupos</h4>";
         // Listado de validaciones
 
+        foreach ($validationsgroups as $validation) {
+            $status = $validation['passed'] ? '🟢' : '🔴';
+            $color = $validation['passed'] ? 'black' : 'red';
+            $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+        }
 
-        foreach ($validations as $validation) {
+        foreach ($validations_gropupswithquizzes as $validation) {
             $status = $validation['passed'] ? '🟢' : '🔴';
             $color = $validation['passed'] ? 'black' : 'red';
             $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
@@ -180,7 +216,6 @@ class block_validador extends block_base {
                 $valid_groups[] = $group;
             }
         }
-        // print_r($valid_groups);
         foreach ($valid_groups as $group) {
             $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
             $this->content->text .= "<strong>Cuestionario: {$quiz->name}</strong><br>";
@@ -346,7 +381,8 @@ class block_validador extends block_base {
         }
 
         $validations[] = [
-            'name' => 'Bloque Smowl',
+            'id' => 'smowl',
+            'name' => get_string('smowl', 'block_validador'),
             'passed' => $smowl_block_exists
         ];
 
@@ -443,7 +479,6 @@ class block_validador extends block_base {
 
                     // Texto a buscar, sin formato.
                     $expected_text = 'Si tiene problemas técnicos para acceder al examen, contacte por correo electrónico a la siguiente dirección: innovacion@udima.es';
-                    echo ($intro_text).'<br>';
                     // Comparar ignorando formato.
                     if (strpos($intro_text, $expected_text) !== false) {
                         $labels_valid = true;
@@ -492,11 +527,43 @@ class block_validador extends block_base {
         return $validations;
     }
 
-    
+    private function perform_validations_groupwithquizzes() {
+        global $COURSE, $DB;
+        // Validación: verificar que cada grupo válido tenga un cuestionario correspondiente
+        $valid_group_count = 0;
+        $valid_groups = [];
+        $groups = groups_get_all_groups($COURSE->id);
+        foreach ($groups as $group) {
+            if (preg_match('/^#\d{5}#$/', $group->name)) {
+                $valid_group_count++;
+                $valid_groups[] = $group;
+            }
+        }
+        $quizzes_valid = true;
+        // Vamos a validar todos los cuestionarios.
+        foreach ($valid_groups as $group) {
+            // Buscar el cuestionario cuyo nombre es igual al nombre del grupo
+            $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
+            if ($quiz) {
+                
+                // $this->validate_quiz($quiz, $group);
 
-    
+            } else {
+                // No se encontró un cuestionario con el nombre del grupo
+                $quizzes_valid = false;
+                break;
+            }
+        }
+        $validations[] = [
+            'id' => 'groupwithquizzes',
+            'name' => get_string('groupwithquizzes', 'block_validador'),
+            'passed' => $quizzes_valid
+        ];
 
-    private function perform_validations() {
+        return $validations;
+    }
+
+    private function perform_validations_groups() {
         global $COURSE, $DB, $CFG;
 
         $validations = [];
@@ -515,30 +582,11 @@ class block_validador extends block_base {
         }
         $valid_group_names = $valid_group_count >= 2;
         $validations[] = [
-            'name' => 'Hay grupos válidos',
+            'id' => 'groups',
+            'name' => get_string('groups', 'block_validador'),
             'passed' => $valid_group_names
         ];
 
-        // Validación: verificar que cada grupo válido tenga un cuestionario correspondiente
-        $quizzes_valid = true;
-        // Vamos a validar todos los cuestionarios.
-        foreach ($valid_groups as $group) {
-            // Buscar el cuestionario cuyo nombre es igual al nombre del grupo
-            $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
-            if ($quiz) {
-                
-                // $this->validate_quiz($quiz, $group);
-
-            } else {
-                // No se encontró un cuestionario con el nombre del grupo
-                $quizzes_valid = false;
-                break;
-            }
-        }
-        $validations[] = [
-            'name' => 'Todos los grupos tienen cuestionarios',
-            'passed' => $quizzes_valid
-        ];
         return $validations;
     }
 
@@ -558,7 +606,8 @@ class block_validador extends block_base {
         }
 
         $validationsgradebook[] = [
-            'name' => 'Hay categoría Examen final',
+            'id' => 'gradebook',
+            'name' => get_string('gradebook', 'block_validador'),
             'passed' => $gradebook_valid
         ];
 
