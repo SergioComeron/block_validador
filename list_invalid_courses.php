@@ -39,8 +39,8 @@ if (!$results) {
     }
 
     // Contar el número total de cursos con validaciones no válidas
-    $total_courses = count($courses);
-    echo html_writer::tag('p', get_string('totalinvalidcourses', 'block_validador', $total_courses));
+    // $total_courses = count($courses);
+    // echo html_writer::tag('p', get_string('totalinvalidcourses', 'block_validador', $total_courses));
 
     echo html_writer::start_tag('table', ['class' => 'generaltable']);
     echo html_writer::start_tag('thead');
@@ -54,14 +54,9 @@ if (!$results) {
     echo html_writer::start_tag('tbody');
 
     foreach ($courses as $courseid => $course) {
-        $rowspan = count($course['validations']);
-        $first = true;
         foreach ($course['validations'] as $validation) {
             echo html_writer::start_tag('tr');
-            if ($first) {
-                echo html_writer::tag('td', html_writer::link(new moodle_url('/course/view.php', ['id' => $courseid]), $course['coursename']), ['rowspan' => $rowspan]);
-                $first = false;
-            }
+            echo html_writer::tag('td', html_writer::link(new moodle_url('/course/view.php', ['id' => $courseid]), $course['coursename']));
             echo html_writer::tag('td', $validation->validationname);
             echo html_writer::tag('td', userdate($validation->timecreated));
             echo html_writer::tag('td', userdate($validation->timemodified));
