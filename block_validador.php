@@ -57,66 +57,11 @@ class block_validador extends block_base {
 
         $validations_passed = true;
 
-        $validations_gropupswithquizzes = $this->perform_validations_groupwithquizzes();
-        foreach ($validations_gropupswithquizzes as $validation) {
-            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['id']];
-            $existing = $DB->get_record('block_validador_results', $params);
-
-            $newpassed = $validation['passed'] ? 1 : 0;
-
-            // Si no existe el registro, lo insertamos
-            // Si existe, solo actualizamos si hubo un cambio en passed
-            if (!$existing) {
-                $record = new stdClass();
-                $record->courseid = $COURSE->id;
-                $record->validationname = $validation['id'];
-                $record->passed = $newpassed;
-                $record->timecreated = time();
-                $record->timemodified = time();
-                $DB->insert_record('block_validador_results', $record);
-            } else {
-                // Existe un resultado previo, verificar si cambió
-                if ($existing->passed != $newpassed) {
-                    $existing->passed = $newpassed;
-                    $existing->timemodified = time();
-                    $DB->update_record('block_validador_results', $existing);
-                }
-                // Si no cambió, no hacemos nada.
-            }
-        }
-
-        $validationsgradebook = $this->performs_validations_gradebook();
-        foreach ($validationsgradebook as $validation) {
-            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['id']];
-            $existing = $DB->get_record('block_validador_results', $params);
-
-            $newpassed = $validation['passed'] ? 1 : 0;
-
-            // Si no existe el registro, lo insertamos
-            // Si existe, solo actualizamos si hubo un cambio en passed
-            if (!$existing) {
-                $record = new stdClass();
-                $record->courseid = $COURSE->id;
-                $record->validationname = $validation['id'];
-                $record->passed = $newpassed;
-                $record->timecreated = time();
-                $record->timemodified = time();
-                $DB->insert_record('block_validador_results', $record);
-            } else {
-                // Existe un resultado previo, verificar si cambió
-                if ($existing->passed != $newpassed) {
-                    $existing->passed = $newpassed;
-                    $existing->timemodified = time();
-                    $DB->update_record('block_validador_results', $existing);
-                }
-                // Si no cambió, no hacemos nada.
-            }
-        }
-        $validationssmowl = $this->perform_validations_smowl();
-
+        $this->content->text .= "<h4>Grupos</h4>";
         $validationsgroups = $this->perform_validations_groups();
         foreach ($validationsgroups as $validation) {
-            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['id']];
+            $contextid = $validation['contextid']; // Asegúrate de que 'contextid' esté disponible en tu validación
+            $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
             $existing = $DB->get_record('block_validador_results', $params);
 
             $newpassed = $validation['passed'] ? 1 : 0;
@@ -125,7 +70,7 @@ class block_validador extends block_base {
             // Si existe, solo actualizamos si hubo un cambio en passed
             if (!$existing) {
                 $record = new stdClass();
-                $record->courseid = $COURSE->id;
+                $record->contextid = $contextid;
                 $record->validationname = $validation['id'];
                 $record->passed = $newpassed;
                 $record->timecreated = time();
@@ -140,65 +85,111 @@ class block_validador extends block_base {
                 }
                 // Si no cambió, no hacemos nada.
             }
-
-
-            $params = ['courseid' => $COURSE->id, 'validationname' => $validation['id']];
-            $existing = $DB->get_record('block_validador_results', $params);
-        
-            $newpassed = $validation['passed'] ? 1 : 0;
-        
-            // Si no existe el registro, lo insertamos
-            // Si existe, solo actualizamos si hubo un cambio en passed
-            if (!$existing) {
-                $record = new stdClass();
-                $record->courseid = $COURSE->id;
-                $record->validationname = $validation['id'];
-                $record->passed = $newpassed;
-                $record->timecreated = time();
-                $record->timemodified = time();
-                $DB->insert_record('block_validador_results', $record);
-            } else {
-                // Existe un resultado previo, verificar si cambió
-                if ($existing->passed != $newpassed) {
-                    $existing->passed = $newpassed;
-                    $existing->timemodified = time();
-                    $DB->update_record('block_validador_results', $existing);
-                }
-                // Si no cambió, no hacemos nada.
-            }
-        }
-
-
-
-        $this->content->text .= "<h4>Grupos</h4>";
-        // Listado de validaciones
-
-        foreach ($validationsgroups as $validation) {
-            $status = $validation['passed'] ? '🟢' : '🔴';
-            $color = $validation['passed'] ? 'black' : 'red';
-            $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
-        }
-
-        foreach ($validations_gropupswithquizzes as $validation) {
-            $status = $validation['passed'] ? '🟢' : '🔴';
-            $color = $validation['passed'] ? 'black' : 'red';
-            $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
-        }
-        
-        $this->content->text .= "<h4>Libro de Calificaciones</h4>";
-
-        // Listado de validaciones
-        foreach ($validationsgradebook as $validation) {
             $status = $validation['passed'] ? '🟢' : '🔴';
             $color = $validation['passed'] ? 'black' : 'red';
             $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
             $validations_passed = $validations_passed && $validation['passed'];
         }
 
+        $validations_gropupswithquizzes = $this->perform_validations_groupwithquizzes();
+        foreach ($validations_gropupswithquizzes as $validation) {
+            $contextid = $validation['contextid']; // Asegúrate de que 'contextid' esté disponible en tu validación
+            $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+            $existing = $DB->get_record('block_validador_results', $params);
+        
+            $newpassed = $validation['passed'] ? 1 : 0;
+        
+            // Si no existe el registro, lo insertamos
+            // Si existe, solo actualizamos si hubo un cambio en passed
+            if (!$existing) {
+                $record = new stdClass();
+                $record->contextid = $contextid;
+                $record->validationname = $validation['id'];
+                $record->passed = $newpassed;
+                $record->timecreated = time();
+                $record->timemodified = time();
+                $DB->insert_record('block_validador_results', $record);
+            } else {
+                // Existe un resultado previo, verificar si cambió
+                if ($existing->passed != $newpassed) {
+                    $existing->passed = $newpassed;
+                    $existing->timemodified = time();
+                    $DB->update_record('block_validador_results', $existing);
+                }
+                // Si no cambió, no hacemos nada.
+            }
+            $status = $validation['passed'] ? '🟢' : '🔴';
+            $color = $validation['passed'] ? 'black' : 'red';
+            $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            $validations_passed = $validations_passed && $validation['passed'];
+        }
+        
+        $this->content->text .= "<h4>Libro de Calificaciones</h4>";
+
+        $validationsgradebook = $this->performs_validations_gradebook();
+        foreach ($validationsgradebook as $validation) {
+            $contextid = $validation['contextid']; // Asegúrate de que 'contextid' esté disponible en tu validación
+            $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+            $existing = $DB->get_record('block_validador_results', $params);
+        
+            $newpassed = $validation['passed'] ? 1 : 0;
+        
+            // Si no existe el registro, lo insertamos
+            // Si existe, solo actualizamos si hubo un cambio en passed
+            if (!$existing) {
+                $record = new stdClass();
+                $record->contextid = $contextid;
+                $record->validationname = $validation['id'];
+                $record->passed = $newpassed;
+                $record->timecreated = time();
+                $record->timemodified = time();
+                $DB->insert_record('block_validador_results', $record);
+            } else {
+                // Existe un resultado previo, verificar si cambió
+                if ($existing->passed != $newpassed) {
+                    $existing->passed = $newpassed;
+                    $existing->timemodified = time();
+                    $DB->update_record('block_validador_results', $existing);
+                }
+                // Si no cambió, no hacemos nada.
+            }
+            $status = $validation['passed'] ? '🟢' : '🔴';
+            $color = $validation['passed'] ? 'black' : 'red';
+            $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            $validations_passed = $validations_passed && $validation['passed'];
+        }
+
+
         $this->content->text .= "<h4>Smowl</h4>";
 
         // Listado de validaciones
+        $validationssmowl = $this->perform_validations_smowl();
         foreach ($validationssmowl as $validation) {
+            $contextid = $validation['contextid']; // Asegúrate de que 'contextid' esté disponible en tu validación
+            $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+            $existing = $DB->get_record('block_validador_results', $params);
+
+            $newpassed = $validation['passed'] ? 1 : 0;
+
+            // Si no existe el registro, lo insertamos
+            // Si existe, solo actualizamos si hubo un cambio en passed
+            if (!$existing) {
+                $record = new stdClass();
+                $record->contextid = $contextid;
+                $record->validationname = $validation['id'];
+                $record->passed = $newpassed;
+                $record->timecreated = time();
+                $record->timemodified = time();
+                $DB->insert_record('block_validador_results', $record);
+            } else {
+                // Existe un resultado previo, verificar si cambió
+                if ($existing->passed != $newpassed) {
+                    $existing->passed = $newpassed;
+                    $existing->timemodified = time();
+                    $DB->update_record('block_validador_results', $existing);
+                }
+                // Si no cambió, no hacemos nada.
+            }
             $status = $validation['passed'] ? '🟢' : '🔴';
             $color = $validation['passed'] ? 'black' : 'red';
             $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
@@ -218,11 +209,42 @@ class block_validador extends block_base {
         }
         foreach ($valid_groups as $group) {
             $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
+            
             $this->content->text .= "<strong>Cuestionario: {$quiz->name}</strong><br>";
             
             // Validación del límite de tiempo
+
+            $cm = get_coursemodule_from_instance('quiz', $quiz->id);
+            $context = context_module::instance($cm->id);
+            $contextid = $context->id;
+
             $validationstimelimit = $this->timelimitvalidation($quiz);
             foreach ($validationstimelimit as $validation) {
+                // $contextid = context_module::instance($quiz->cmid)->id;
+                $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+                $existing = $DB->get_record('block_validador_results', $params);
+
+                $newpassed = $validation['passed'] ? 1 : 0;
+
+                // Si no existe el registro, lo insertamos
+                // Si existe, solo actualizamos si hubo un cambio en passed
+                if (!$existing) {
+                    $record = new stdClass();
+                    $record->contextid = $contextid;
+                    $record->validationname = $validation['id'];
+                    $record->passed = $newpassed;
+                    $record->timecreated = time();
+                    $record->timemodified = time();
+                    $DB->insert_record('block_validador_results', $record);
+                } else {
+                    // Existe un resultado previo, verificar si cambió
+                    if ($existing->passed != $newpassed) {
+                        $existing->passed = $newpassed;
+                        $existing->timemodified = time();
+                        $DB->update_record('block_validador_results', $existing);
+                    }
+                    // Si no cambió, no hacemos nada.
+                }
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;' title='El tiempo deben ser 90 minutos'>$status{$validation['name']}</span><br>";
@@ -232,6 +254,31 @@ class block_validador extends block_base {
             // Validación: verificar que todas las preguntas estén en una misma página
             $validationsquestionperpage = $this->questionperpagevalidation($quiz);
             foreach ($validationsquestionperpage as $validation) {
+                // $contextid = context_module::instance($quiz->cmid)->id;
+                $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+                $existing = $DB->get_record('block_validador_results', $params);
+
+                $newpassed = $validation['passed'] ? 1 : 0;
+
+                // Si no existe el registro, lo insertamos
+                // Si existe, solo actualizamos si hubo un cambio en passed
+                if (!$existing) {
+                    $record = new stdClass();
+                    $record->contextid = $contextid;
+                    $record->validationname = $validation['id'];
+                    $record->passed = $newpassed;
+                    $record->timecreated = time();
+                    $record->timemodified = time();
+                    $DB->insert_record('block_validador_results', $record);
+                } else {
+                    // Existe un resultado previo, verificar si cambió
+                    if ($existing->passed != $newpassed) {
+                        $existing->passed = $newpassed;
+                        $existing->timemodified = time();
+                        $DB->update_record('block_validador_results', $existing);
+                    }
+                    // Si no cambió, no hacemos nada.
+                }
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;' title='Todas las preguntas en una única página'>$status{$validation['name']}</span><br>";
@@ -241,6 +288,30 @@ class block_validador extends block_base {
             // Validación: verificar que el cuestionario tenga restricciones de grupo
             $validationsgrouprestiction = $this->grouprestictionvalidation($quiz, $group);
             foreach ($validationsgrouprestiction as $validation) {
+                $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+                $existing = $DB->get_record('block_validador_results', $params);
+
+                $newpassed = $validation['passed'] ? 1 : 0;
+
+                // Si no existe el registro, lo insertamos
+                // Si existe, solo actualizamos si hubo un cambio en passed
+                if (!$existing) {
+                    $record = new stdClass();
+                    $record->contextid = $contextid;
+                    $record->validationname = $validation['id'];
+                    $record->passed = $newpassed;
+                    $record->timecreated = time();
+                    $record->timemodified = time();
+                    $DB->insert_record('block_validador_results', $record);
+                } else {
+                    // Existe un resultado previo, verificar si cambió
+                    if ($existing->passed != $newpassed) {
+                        $existing->passed = $newpassed;
+                        $existing->timemodified = time();
+                        $DB->update_record('block_validador_results', $existing);
+                    }
+                    // Si no cambió, no hacemos nada.
+                }
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;' title='El cuestionario tiene restricción por grupo'>$status{$validation['name']}</span><br>";
@@ -250,6 +321,30 @@ class block_validador extends block_base {
             // Validacion: verificar label
             $validationslabel = $this->labelvalidation($quiz);
             foreach ($validationslabel as $validation) {
+                $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+                $existing = $DB->get_record('block_validador_results', $params);
+
+                $newpassed = $validation['passed'] ? 1 : 0;
+
+                // Si no existe el registro, lo insertamos
+                // Si existe, solo actualizamos si hubo un cambio en passed
+                if (!$existing) {
+                    $record = new stdClass();
+                    $record->contextid = $contextid;
+                    $record->validationname = $validation['id'];
+                    $record->passed = $newpassed;
+                    $record->timecreated = time();
+                    $record->timemodified = time();
+                    $DB->insert_record('block_validador_results', $record);
+                } else {
+                    // Existe un resultado previo, verificar si cambió
+                    if ($existing->passed != $newpassed) {
+                        $existing->passed = $newpassed;
+                        $existing->timemodified = time();
+                        $DB->update_record('block_validador_results', $existing);
+                    }
+                    // Si no cambió, no hacemos nada.
+                }
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
@@ -260,6 +355,30 @@ class block_validador extends block_base {
             // Validacion: verificar nota de aprobado
             $validationsgradetopass = $this->gradetopass($quiz);
             foreach ($validationsgradetopass as $validation) {
+                $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+                $existing = $DB->get_record('block_validador_results', $params);
+
+                $newpassed = $validation['passed'] ? 1 : 0;
+
+                // Si no existe el registro, lo insertamos
+                // Si existe, solo actualizamos si hubo un cambio en passed
+                if (!$existing) {
+                    $record = new stdClass();
+                    $record->contextid = $contextid;
+                    $record->validationname = $validation['id'];
+                    $record->passed = $newpassed;
+                    $record->timecreated = time();
+                    $record->timemodified = time();
+                    $DB->insert_record('block_validador_results', $record);
+                } else {
+                    // Existe un resultado previo, verificar si cambió
+                    if ($existing->passed != $newpassed) {
+                        $existing->passed = $newpassed;
+                        $existing->timemodified = time();
+                        $DB->update_record('block_validador_results', $existing);
+                    }
+                    // Si no cambió, no hacemos nada.
+                }
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
@@ -269,6 +388,30 @@ class block_validador extends block_base {
             // Validacion: verificar categoria de calificación
             $validationsquizgradecategory = $this->validate_quiz_grade_category($quiz);
             foreach ($validationsquizgradecategory as $validation) {
+                $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+                $existing = $DB->get_record('block_validador_results', $params);
+
+                $newpassed = $validation['passed'] ? 1 : 0;
+
+                // Si no existe el registro, lo insertamos
+                // Si existe, solo actualizamos si hubo un cambio en passed
+                if (!$existing) {
+                    $record = new stdClass();
+                    $record->contextid = $contextid;
+                    $record->validationname = $validation['id'];
+                    $record->passed = $newpassed;
+                    $record->timecreated = time();
+                    $record->timemodified = time();
+                    $DB->insert_record('block_validador_results', $record);
+                } else {
+                    // Existe un resultado previo, verificar si cambió
+                    if ($existing->passed != $newpassed) {
+                        $existing->passed = $newpassed;
+                        $existing->timemodified = time();
+                        $DB->update_record('block_validador_results', $existing);
+                    }
+                    // Si no cambió, no hacemos nada.
+                }
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
@@ -278,6 +421,30 @@ class block_validador extends block_base {
             // Validacion: verificar envio automatico
             $validationsquizautosubmit = $this->validate_quiz_auto_submit($quiz);
             foreach ($validationsquizautosubmit as $validation) {
+                $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+                $existing = $DB->get_record('block_validador_results', $params);
+
+                $newpassed = $validation['passed'] ? 1 : 0;
+
+                // Si no existe el registro, lo insertamos
+                // Si existe, solo actualizamos si hubo un cambio en passed
+                if (!$existing) {
+                    $record = new stdClass();
+                    $record->contextid = $contextid;
+                    $record->validationname = $validation['id'];
+                    $record->passed = $newpassed;
+                    $record->timecreated = time();
+                    $record->timemodified = time();
+                    $DB->insert_record('block_validador_results', $record);
+                } else {
+                    // Existe un resultado previo, verificar si cambió
+                    if ($existing->passed != $newpassed) {
+                        $existing->passed = $newpassed;
+                        $existing->timemodified = time();
+                        $DB->update_record('block_validador_results', $existing);
+                    }
+                    // Si no cambió, no hacemos nada.
+                }
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
@@ -287,6 +454,30 @@ class block_validador extends block_base {
             // Validacion: verificar opciones de revisión
             $validationsquizreviewoptions = $this->validate_quiz_review_options($quiz);
             foreach ($validationsquizreviewoptions as $validation) {
+                $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+                $existing = $DB->get_record('block_validador_results', $params);
+
+                $newpassed = $validation['passed'] ? 1 : 0;
+
+                // Si no existe el registro, lo insertamos
+                // Si existe, solo actualizamos si hubo un cambio en passed
+                if (!$existing) {
+                    $record = new stdClass();
+                    $record->contextid = $contextid;
+                    $record->validationname = $validation['id'];
+                    $record->passed = $newpassed;
+                    $record->timecreated = time();
+                    $record->timemodified = time();
+                    $DB->insert_record('block_validador_results', $record);
+                } else {
+                    // Existe un resultado previo, verificar si cambió
+                    if ($existing->passed != $newpassed) {
+                        $existing->passed = $newpassed;
+                        $existing->timemodified = time();
+                        $DB->update_record('block_validador_results', $existing);
+                    }
+                    // Si no cambió, no hacemos nada.
+                }
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
                 $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
@@ -356,7 +547,8 @@ class block_validador extends block_base {
         }
     
         $validations[] = [
-            'name' => 'Opciones de Revisión del Cuestionario',
+            'id' => 'quizreviewoptions',
+            'name' => get_string('quizreviewoptions', 'block_validador'),
             'passed' => $review_options_valid
         ];
     
@@ -382,6 +574,7 @@ class block_validador extends block_base {
 
         $validations[] = [
             'id' => 'smowl',
+            'contextid' => context_course::instance($COURSE->id)->id,
             'name' => get_string('smowl', 'block_validador'),
             'passed' => $smowl_block_exists
         ];
@@ -399,7 +592,8 @@ class block_validador extends block_base {
         }
 
         $validations[] = [
-            'name' => 'Envío Automático al Terminar el Tiempo',
+            'id' => 'quizautosubmit',
+            'name' => get_string('quizautosubmit', 'block_validador'),
             'passed' => $auto_submit
         ];
 
@@ -426,7 +620,8 @@ class block_validador extends block_base {
         }
 
         $validations[] = [
-            'name' => 'Categoría de Calificación Examen online',
+            'id' => 'quizgradecategory',
+            'name' => get_string('quizgradecategory', 'block_validador'),
             'passed' => $category_valid
         ];
 
@@ -446,12 +641,14 @@ class block_validador extends block_base {
     
         if ($gradeitem && $gradeitem->gradepass == 5) {
             $validations[] = [
-                'name' => 'Nota de Aprobado',
+                'id' => 'gradetopass',
+                'name' => get_string('gradetopass', 'block_validador'),
                 'passed' => true
             ];
         } else {
             $validations[] = [
-                'name' => 'Nota de Aprobado',
+                'id' => 'gradetopass',
+                'name' => get_string('gradetopass', 'block_validador'),
                 'passed' => false
             ];
         }
@@ -488,7 +685,8 @@ class block_validador extends block_base {
         }
 
         $validations[] = [
-            'name' => 'Recursos de Texto y Medios',
+            'id' => 'label',
+            'name' => get_string('label', 'block_validador'),
             'passed' => $labels_valid
         ];
         return $validations;
@@ -499,12 +697,14 @@ class block_validador extends block_base {
         // Validación: verificar que todas las preguntas estén en una misma página
         if ($quiz->questionsperpage != 0) {
             $validations[] = [
-                'name' => 'Preguntas en una sola página',
+                'id' => 'quizquestionsperpage',
+                'name' => get_string('quizquestionsperpage', 'block_validador'),
                 'passed' => false
             ];
         } else {
             $validations[] = [
-                'name' => 'Preguntas en una sola página',
+                'id' => 'quizquestionsperpage',
+                'name' => get_string('quizquestionsperpage', 'block_validador'),
                 'passed' => true
             ];
         }
@@ -515,15 +715,18 @@ class block_validador extends block_base {
         $validations = [];
         if ($quiz->timelimit == 5400) { // 5400 segundos = 90 minutos
             $validations[] = [
-                'name' => 'Límite de Tiempo del Cuestionario',
+                'id' => 'quiztimelimit',
+                'name' => get_string('quiztimelimit', 'block_validador'),
                 'passed' => true
             ];
         } else {
             $validations[] = [
-                'name' => 'Límite de Tiempo del Cuestionario',
+                'id' => 'quiztimelimit',
+                'name' => get_string('quiztimelimit', 'block_validador'),
                 'passed' => false
             ];
         }
+        
         return $validations;
     }
 
@@ -556,6 +759,7 @@ class block_validador extends block_base {
         }
         $validations[] = [
             'id' => 'groupwithquizzes',
+            'contextid' => context_course::instance($COURSE->id)->id,
             'name' => get_string('groupwithquizzes', 'block_validador'),
             'passed' => $quizzes_valid
         ];
@@ -583,6 +787,7 @@ class block_validador extends block_base {
         $valid_group_names = $valid_group_count >= 2;
         $validations[] = [
             'id' => 'groups',
+            'contextid' => context_course::instance($COURSE->id)->id,
             'name' => get_string('groups', 'block_validador'),
             'passed' => $valid_group_names
         ];
@@ -607,6 +812,7 @@ class block_validador extends block_base {
 
         $validationsgradebook[] = [
             'id' => 'gradebook',
+            'contextid' => context_course::instance($COURSE->id)->id,
             'name' => get_string('gradebook', 'block_validador'),
             'passed' => $gradebook_valid
         ];
@@ -637,7 +843,8 @@ class block_validador extends block_base {
             $conrestriccion = false;
         }    
         $validations[] = [
-            'name' => 'Restricciones de Grupo',
+            'id' => 'grouprestriccion',
+            'name' => get_string('grouprestriccion', 'block_validador'),
             'passed' => $conrestriccion,
         ];  
         return $validations;
