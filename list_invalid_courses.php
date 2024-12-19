@@ -14,19 +14,30 @@ echo $OUTPUT->header();
 
 global $DB;
 
-// Consulta para obtener cursos y actividades con validaciones erróneas.
-$sql = "SELECT v.id AS resultid, c.id AS courseid, c.fullname AS coursename, v.validationname, v.timecreated, v.timemodified, 
-               CASE 
-                   WHEN ctx.contextlevel = 50 THEN c.fullname
-                   WHEN ctx.contextlevel = 70 THEN (SELECT c2.fullname FROM {course} c2 JOIN {quiz} q ON q.course = c2.id WHERE q.id = ctx.instanceid)
-                   ELSE 'Unknown'
-               END AS coursename
-        FROM {block_validador_results} v
-        JOIN {context} ctx ON v.contextid = ctx.id
-        LEFT JOIN {course} c ON (ctx.contextlevel = 50 AND ctx.instanceid = c.id)
-        WHERE (ctx.contextlevel = 50 OR ctx.contextlevel = 70) AND v.passed = 0";
+// Asegurarse de que CONTEXT_MODULE está definido
+// if (!defined('CONTEXT_MODULE')) {
+//     define('CONTEXT_MODULE', 70);
+// }
 
-$results = $DB->get_records_sql($sql);
+// Consulta para obtener cursos y actividades con validaciones erróneas.
+$sql = "SELECT 
+            v.id AS resultid, 
+            c.id AS courseid, 
+            c.fullname AS coursename, 
+            v.validationname, 
+            v.timecreated, 
+            v.timemodified, 
+            cm.id AS cmid, 
+            m.name AS modulename
+        FROM {block_validador_results} v
+        JOIN {course} c ON v.courseid = c.id
+        LEFT JOIN {context} ctx ON ctx.id = v.contextid AND ctx.contextlevel = :contextlevel
+        LEFT JOIN {course_modules} cm ON cm.id = ctx.instanceid
+        LEFT JOIN {modules} m ON cm.module = m.id
+        WHERE v.passed = 0";
+
+$params = ['contextlevel' => CONTEXT_MODULE];
+$results = $DB->get_records_sql($sql, $params);
 
 if (!$results) {
     echo $OUTPUT->notification(get_string('nocoursesfound', 'block_validador'), 'notifymessage');
@@ -38,15 +49,12 @@ if (!$results) {
         $courses[$result->courseid]['validations'][] = $result;
     }
 
-    // Contar el número total de cursos con validaciones no válidas
-    // $total_courses = count($courses);
-    // echo html_writer::tag('p', get_string('totalinvalidcourses', 'block_validador', $total_courses));
-
     echo html_writer::start_tag('table', ['class' => 'generaltable']);
     echo html_writer::start_tag('thead');
     echo html_writer::start_tag('tr');
     echo html_writer::tag('th', get_string('course', 'block_validador'));
     echo html_writer::tag('th', get_string('validation', 'block_validador'));
+    echo html_writer::tag('th', get_string('activity', 'block_validador'));
     echo html_writer::tag('th', get_string('timecreated', 'block_validador'));
     echo html_writer::tag('th', get_string('timemodified', 'block_validador'));
     echo html_writer::end_tag('tr');
@@ -58,6 +66,12 @@ if (!$results) {
             echo html_writer::start_tag('tr');
             echo html_writer::tag('td', html_writer::link(new moodle_url('/course/view.php', ['id' => $courseid]), $course['coursename']));
             echo html_writer::tag('td', $validation->validationname);
+            if (!empty($validation->cmid)) {
+                $activity_url = new moodle_url('/mod/'.$validation->modulename.'/view.php', ['id' => $validation->cmid]);
+                echo html_writer::tag('td', html_writer::link($activity_url, $validation->modulename));
+            } else {
+                echo html_writer::tag('td', '-');
+            }
             echo html_writer::tag('td', userdate($validation->timecreated));
             echo html_writer::tag('td', userdate($validation->timemodified));
             echo html_writer::end_tag('tr');
