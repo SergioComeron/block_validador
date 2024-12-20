@@ -51,3 +51,5 @@ $string['gradebook_subcategorie_examenpresencial'] = 'Examen final have Examen P
 $string['gradebook_examenfinal_aggregation'] = 'Examen final category aggregation';
 $string['gradebook_examenonline_aggregation'] = 'Examen Online category aggregation';
 $string['gradebook_examenpresencial_aggregation'] = 'Examen Presencial category aggregation';
+$string['showcategories'] = 'Mostrar categorías';
+$string['showcategories_desc'] = 'Seleccione las categorías de curso que desea mostrar.';
