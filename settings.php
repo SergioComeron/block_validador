@@ -16,7 +16,7 @@
 
 /**
  * 
- * Settings for Jitsi instances
+ * Settings for validador block
  * @package   block_validador
  * @copyright  2024 Sergio Comerón (info@sergiocomeron.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -25,10 +25,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
-    $settings = new admin_settingpage('block_validador', get_string('pluginname', 'block_validador'));
+    // $settings = new admin_settingpage('block_validador', get_string('pluginname', 'block_validador'));
+
+    // $settings = new admin_settingpage('block_validador', get_string('pluginname', 'block_validador'));
 
     // Obtener todas las categorías de cursos
     $categories = core_course_category::make_categories_list();
+
+
 
     $settings->add(new admin_setting_configmultiselect(
         'block_validador/showcategories',
@@ -37,6 +41,4 @@ if ($ADMIN->fulltree) {
         [],
         $categories
     ));
-
-    $ADMIN->add('blocksettings', $settings);
 }

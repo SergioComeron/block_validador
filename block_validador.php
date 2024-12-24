@@ -29,14 +29,6 @@ class block_validador extends block_base {
         $this->title = get_string('pluginname', 'block_validador');
     }
 
-    public function applicable_formats() {
-        return [
-            'course' => true,   // Permitir solo en el contexto de curso.
-            'site' => false,    // No permitir en la página principal.
-            'my' => false       // No permitir en el área personal (My Moodle).
-        ];
-    }
-
     public function get_content() {
         global $COURSE, $DB, $CFG;
 
@@ -1206,5 +1198,17 @@ class block_validador extends block_base {
         return false;
     }
 
+    public function has_config() {
+        return true;
+    }
 
+    // public function applicable_formats() {
+    //     return [
+    //         'admin' => false,
+    //         'site-index' => false,
+    //         'course-view' => true,
+    //         'mod' => false,
+    //         'my' => false
+    //     ];
+    // }
 }
