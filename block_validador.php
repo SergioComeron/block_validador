@@ -45,6 +45,16 @@ class block_validador extends block_base {
             return $this->content;
         }
 
+        // Obtener la configuración de categorías permitidas
+        $allowed_categories = get_config('block_validador', 'showcategories');
+
+        // Verificar si la categoría del curso actual está en la lista de categorías permitidas
+        if (!in_array($COURSE->category, explode(',', $allowed_categories))) {
+            $this->content = new stdClass();
+            $this->content->text = '';
+            return $this->content;
+        }
+
         // Contenido del bloque
         $this->content = new stdClass();
         $this->content->text = '';
