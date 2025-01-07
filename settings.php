@@ -25,14 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
-    // $settings = new admin_settingpage('block_validador', get_string('pluginname', 'block_validador'));
-
-    // $settings = new admin_settingpage('block_validador', get_string('pluginname', 'block_validador'));
-
     // Obtener todas las categorías de cursos
     $categories = core_course_category::make_categories_list();
-
-
 
     $settings->add(new admin_setting_configmultiselect(
         'block_validador/showcategories',
@@ -40,5 +34,12 @@ if ($ADMIN->fulltree) {
         get_string('showcategories_desc', 'block_validador'),
         [],
         $categories
+    ));
+
+    // Añadir enlace a la página list_invalid_courses.php
+    $settings->add(new admin_setting_heading(
+        'block_validador/linktoinvalidcourses',
+        get_string('linktoinvalidcourses', 'block_validador'),
+        html_writer::link(new moodle_url('/blocks/validador/list_invalid_courses.php'), get_string('linktoinvalidcourses_desc', 'block_validador'))
     ));
 }

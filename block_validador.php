@@ -389,8 +389,8 @@ class block_validador extends block_base {
             }
             foreach ($valid_groups as $group) {
                 $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
-                
-                $this->content->text .= "<strong>Cuestionario: {$quiz->name}</strong><br>";
+                if ($quiz) {
+                    $this->content->text .= "<strong>Cuestionario: {$quiz->name}</strong><br>";
                 
                 // Validación del límite de tiempo
     
@@ -671,6 +671,8 @@ class block_validador extends block_base {
                     $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
                     $validations_passed = $validations_passed && $validation['passed'];
                 }
+                }
+                
             }
         }
         

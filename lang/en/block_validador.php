@@ -53,3 +53,5 @@ $string['gradebook_examenonline_aggregation'] = 'Examen Online category aggregat
 $string['gradebook_examenpresencial_aggregation'] = 'Examen Presencial category aggregation';
 $string['showcategories'] = 'Mostrar categorías';
 $string['showcategories_desc'] = 'Seleccione las categorías de curso que desea mostrar.';
+$string['linktoinvalidcourses'] = 'Enlace a cursos inválidos';
+$string['linktoinvalidcourses_desc'] = 'Haz clic aquí para ver la lista de cursos inválidos';
