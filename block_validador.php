@@ -987,110 +987,145 @@ class block_validador extends block_base {
         return $validations;
     }
 
-
     private function performs_validations_gradebook() {
         global $COURSE, $DB, $CFG;
+    
         // Validación: verificar la estructura del libro de calificaciones
         $gradebook_valid = true;
-        // Obtener la categoría "Exámen final"
-        $exam_final_category = $DB->get_record('grade_categories', ['courseid' => $COURSE->id, 'fullname' => 'Examen final']);
+    
+        // Obtener la categoría "Examen final" (insensible a mayúsculas/minúsculas)
+        $exam_final_category = $DB->get_record_sql(
+            "SELECT * 
+             FROM {grade_categories} 
+             WHERE courseid = :courseid 
+             AND LOWER(fullname) = LOWER(:fullname)",
+            ['courseid' => $COURSE->id, 'fullname' => 'Examen final']
+        );
+    
         if ($exam_final_category) {
             // Verificar que el método de calificación sea "Calificación más alta" (GRADE_AGGREGATE_MAX)
-
-            /// >>>>>>>>>>>>>> AQUI VA LA VALIDACIÓN DEL LIBRO DE CALIFICACIONES <<<<<<<<<<<<<<
+            
         } else {
             $gradebook_valid = false;
         }
-
+    
         $validationsgradebook[] = [
             'id' => 'gradebook',
             'contextid' => context_course::instance($COURSE->id)->id,
             'name' => get_string('gradebook', 'block_validador'),
             'passed' => $gradebook_valid
         ];
-
+    
         return $validationsgradebook;
     }
 
     private function performs_validations_gradebook_subcategorie_examenonline() {
         global $COURSE, $DB, $CFG;
+    
         // Validación: verificar la estructura del libro de calificaciones
         $gradebook_valid = true;
-        // Obtener la categoría "Exámen final"
-        $exam_final_category = $DB->get_record('grade_categories', ['courseid' => $COURSE->id, 'fullname' => 'Examen final']);
+    
+        // Obtener la categoría "Examen final" (insensible a mayúsculas/minúsculas)
+        $exam_final_category = $DB->get_record_sql(
+            "SELECT * 
+             FROM {grade_categories} 
+             WHERE courseid = :courseid 
+             AND LOWER(fullname) = LOWER(:fullname)",
+            ['courseid' => $COURSE->id, 'fullname' => 'Examen final']
+        );
+    
         if ($exam_final_category) {
             // Obtener las subcategorías de la categoría "Examen final"
             $subcategories = $DB->get_records('grade_categories', ['parent' => $exam_final_category->id]);
-
-            // Verificar que exista al menos una subcategoría llamada "Examen online"
+    
+            // Verificar que exista al menos una subcategoría llamada "Examen online" (insensible a mayúsculas/minúsculas)
             $exam_online_subcategory_exists = false;
             foreach ($subcategories as $subcategory) {
-                if ($subcategory->fullname == 'Examen online') {
+                if (strcasecmp($subcategory->fullname, 'Examen online') === 0) {
                     $exam_online_subcategory_exists = true;
                     break;
                 }
             }
-
+    
             if (!$exam_online_subcategory_exists) {
                 $gradebook_valid = false;
             }
         } else {
             $gradebook_valid = false;
         }
-
+    
         $validationsgradebook[] = [
             'id' => 'gradebook_subcategorie_examenonline',
             'contextid' => context_course::instance($COURSE->id)->id,
             'name' => get_string('gradebook_subcategorie_examenonline', 'block_validador'),
             'passed' => $gradebook_valid
         ];
-
+    
         return $validationsgradebook;
     }
 
     private function performs_validations_gradebook_subcategorie_examenpresencial() {
         global $COURSE, $DB, $CFG;
+    
         // Validación: verificar la estructura del libro de calificaciones
         $gradebook_valid = true;
-        // Obtener la categoría "Exámen final"
-        $exam_final_category = $DB->get_record('grade_categories', ['courseid' => $COURSE->id, 'fullname' => 'Examen final']);
+    
+        // Obtener la categoría "Examen final" (insensible a mayúsculas/minúsculas)
+        $exam_final_category = $DB->get_record_sql(
+            "SELECT * 
+             FROM {grade_categories} 
+             WHERE courseid = :courseid 
+             AND LOWER(fullname) = LOWER(:fullname)",
+            ['courseid' => $COURSE->id, 'fullname' => 'Examen final']
+        );
+    
         if ($exam_final_category) {
             // Obtener las subcategorías de la categoría "Examen final"
             $subcategories = $DB->get_records('grade_categories', ['parent' => $exam_final_category->id]);
-
-            // Verificar que exista al menos una subcategoría llamada "Examen online"
+    
+            // Verificar que exista al menos una subcategoría llamada "Examen presencial" (insensible a mayúsculas/minúsculas)
             $exam_online_subcategory_exists = false;
             foreach ($subcategories as $subcategory) {
-                if ($subcategory->fullname == 'Examen presencial') {
+                if (strcasecmp($subcategory->fullname, 'Examen presencial') === 0) {
                     $exam_online_subcategory_exists = true;
                     break;
                 }
             }
-
+    
             if (!$exam_online_subcategory_exists) {
                 $gradebook_valid = false;
             }
         } else {
             $gradebook_valid = false;
         }
-
+    
         $validationsgradebook[] = [
             'id' => 'gradebook_subcategorie_examenpresencial',
             'contextid' => context_course::instance($COURSE->id)->id,
             'name' => get_string('gradebook_subcategorie_examenpresencial', 'block_validador'),
             'passed' => $gradebook_valid
         ];
-
+    
         return $validationsgradebook;
     }
 
     private function validate_examen_final_aggregation() {
         global $DB, $COURSE;
+    
         $aggregation_correcta = true;
     
-        $exam_final_category = $DB->get_record('grade_categories', ['courseid' => $COURSE->id, 'fullname' => 'Examen final']);
+        // Obtener la categoría "Examen final" insensible a mayúsculas/minúsculas
+        $exam_final_category = $DB->get_record_sql(
+            "SELECT * 
+             FROM {grade_categories} 
+             WHERE courseid = :courseid 
+             AND LOWER(fullname) = LOWER(:fullname)",
+            ['courseid' => $COURSE->id, 'fullname' => 'Examen final']
+        );
+    
         if ($exam_final_category) {
-            if ($exam_final_category->aggregation != GRADE_AGGREGATE_MAX) { // Usar GRADE_AGGREGATE_MAX
+            // Verificar si el método de calificación es "Calificación más alta" (GRADE_AGGREGATE_MAX)
+            if ($exam_final_category->aggregation != GRADE_AGGREGATE_MAX) {
                 $aggregation_correcta = false;
             }
         } else {
@@ -1111,7 +1146,15 @@ class block_validador extends block_base {
         global $DB, $COURSE;
         $aggregation_correcta = true;
     
-        $exam_presencial_category = $DB->get_record('grade_categories', ['courseid' => $COURSE->id, 'fullname' => 'Examen presencial']);
+        // Buscar categoría insensible a mayúsculas/minúsculas
+        $exam_presencial_category = $DB->get_record_sql(
+            "SELECT * 
+             FROM {grade_categories} 
+             WHERE courseid = :courseid 
+             AND LOWER(fullname) = LOWER(:fullname)",
+            ['courseid' => $COURSE->id, 'fullname' => 'Examen presencial']
+        );
+    
         if ($exam_presencial_category) {
             if ($exam_presencial_category->aggregation != GRADE_AGGREGATE_MAX) { // Usar GRADE_AGGREGATE_MAX
                 $aggregation_correcta = false;
@@ -1130,13 +1173,19 @@ class block_validador extends block_base {
         return $validationsgradebook;
     }
 
-
-
     private function validate_examen_online_aggregation() {
         global $DB, $COURSE;
         $aggregation_correcta = true;
     
-        $exam_online_category = $DB->get_record('grade_categories', ['courseid' => $COURSE->id, 'fullname' => 'Examen online']);
+        // Buscar categoría insensible a mayúsculas/minúsculas
+        $exam_online_category = $DB->get_record_sql(
+            "SELECT * 
+             FROM {grade_categories} 
+             WHERE courseid = :courseid 
+             AND LOWER(fullname) = LOWER(:fullname)",
+            ['courseid' => $COURSE->id, 'fullname' => 'Examen online']
+        );
+    
         if ($exam_online_category) {
             if ($exam_online_category->aggregation != GRADE_AGGREGATE_MEAN) { // Usar GRADE_AGGREGATE_MEAN
                 $aggregation_correcta = false;
@@ -1154,11 +1203,6 @@ class block_validador extends block_base {
     
         return $validationsgradebook;
     }
-
-
-
-
-
 
     private function grouprestictionvalidation($quiz, $group) {
         global $DB, $COURSE;
@@ -1213,14 +1257,4 @@ class block_validador extends block_base {
     public function has_config() {
         return true;
     }
-
-    // public function applicable_formats() {
-    //     return [
-    //         'admin' => false,
-    //         'site-index' => false,
-    //         'course-view' => true,
-    //         'mod' => false,
-    //         'my' => false
-    //     ];
-    // }
 }
