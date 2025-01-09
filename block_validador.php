@@ -382,7 +382,7 @@ class block_validador extends block_base {
             $valid_group_count = 0;
             $valid_groups = [];
             foreach ($groups as $group) {
-                if (preg_match('/^#\d{5}#$/', $group->name)) {
+                if (preg_match('/^#\d{6}#$/', $group->name)) {
                     $valid_group_count++;
                     $valid_groups[] = $group;
                 }
