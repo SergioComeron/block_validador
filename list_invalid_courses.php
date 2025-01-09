@@ -1,40 +1,55 @@
 <?php
+
 require_once('../../config.php');
 require_once($CFG->libdir . '/tablelib.php');
 require_login();
 
+// Validar que el usuario tenga la capacidad de gestionar.
 $context = context_system::instance();
 require_capability('moodle/site:config', $context);
 
+// URL de la página
 $PAGE->set_url('/blocks/validador/list_invalid_courses.php');
 $PAGE->set_context($context);
 $PAGE->set_title(get_string('invalidcourses', 'block_validador'));
 $PAGE->set_heading(get_string('invalidcourses', 'block_validador'));
 
+// Recuperar parámetros para la acción de eliminar.
+$resultid = optional_param('resultid', 0, PARAM_INT);
+$confirm  = optional_param('confirm', 0, PARAM_BOOL);
+
+// Procesar eliminación si se solicita.
+if ($resultid && $confirm && confirm_sesskey()) {
+    $DB->delete_records('block_validador_results', ['id' => $resultid]);
+    redirect($PAGE->url, get_string('delete_success', 'block_validador'), 2);
+}
+
 echo $OUTPUT->header();
 
 /**
- * Clase de la tabla donde se personalizan columnas y cómo se muestran.
+ * Clase de la tabla personalizada.
  */
 class invalid_courses_table extends table_sql {
 
     public function __construct($uniqueid) {
         parent::__construct($uniqueid);
 
-        // Define las columnas y sus cabeceras
+        // Definir columnas.
         $this->define_columns([
             'coursename',
             'validationname',
             'activity',
             'timecreated',
-            'timemodified'
+            'timemodified',
+            'deleteaction' // Nueva columna para eliminar
         ]);
         $this->define_headers([
             get_string('course', 'block_validador'),
             get_string('validation', 'block_validador'),
             get_string('activity', 'block_validador'),
             get_string('timecreated', 'block_validador'),
-            get_string('timemodified', 'block_validador')
+            get_string('timemodified', 'block_validador'),
+            get_string('delete') // Encabezado de la columna
         ]);
 
         $this->sortable(true, 'timemodified', SORT_DESC);
@@ -42,29 +57,18 @@ class invalid_courses_table extends table_sql {
         $this->pageable(true);
     }
 
-    /**
-     * Genera el enlace para el nombre del curso.
-     */
     public function col_coursename($values) {
         global $OUTPUT;
         $courseurl = new moodle_url('/course/view.php', ['id' => $values->courseid]);
         return $OUTPUT->action_link($courseurl, $values->coursename);
     }
 
-    /**
-     * Genera el enlace para la actividad (si existe).
-     */
     public function col_activity($values) {
         global $OUTPUT;
-        // Si no hay cmid, simplemente mostramos el texto de la actividad.
         if (empty($values->cmid)) {
             return $values->activity;
         }
-        // Si hay cmid, enlazamos a la página de configuración de la actividad.
-        $activityurl = new moodle_url('/course/modedit.php', [
-            'update' => $values->cmid,
-            'return' => 1
-        ]);
+        $activityurl = new moodle_url('/course/modedit.php', ['update' => $values->cmid, 'return' => 1]);
         return $OUTPUT->action_link($activityurl, $values->activity);
     }
 
@@ -75,62 +79,30 @@ class invalid_courses_table extends table_sql {
     public function col_timemodified($values) {
         return userdate($values->timemodified);
     }
+
+    public function col_deleteaction($values) {
+        global $OUTPUT, $PAGE;
+
+        // URL para confirmar la eliminación.
+        $deleteurl = new moodle_url($PAGE->url, [
+            'resultid' => $values->resultid,
+            'confirm' => 1,
+            'sesskey' => sesskey()
+        ]);
+
+        // Botón de eliminación.
+        return $OUTPUT->single_button($deleteurl, get_string('delete'), 'post');
+    }
 }
 
 // ========================================
-// 1. OBTENEMOS TODAS LAS VALIDACIONES
+// Configuración de la tabla y consulta SQL
 // ========================================
 global $DB;
 
-// Obtenemos un array de nombres de validación (distintos)
-$sqlvalidations = "SELECT DISTINCT validationname
-                   FROM {block_validador_results}
-                   WHERE validationname <> ''
-                   ORDER BY validationname";
-$validations = $DB->get_records_sql($sqlvalidations);
-
-// Creamos un array para el <select> (clave => texto)
-$selectoptions = [];
-$selectoptions[''] = get_string('all'); // O "Todas" si prefieres
-foreach ($validations as $val) {
-    $selectoptions[$val->validationname] = $val->validationname;
-}
-
-// ========================================
-// 2. PROCESAMOS EL PARÁMETRO DE BUSQUEDA
-// ========================================
-$selectedvalidation = optional_param('validation', '', PARAM_TEXT);
-
-// ========================================
-// 3. MOSTRAMOS EL FORMULARIO DE FILTRO
-// ========================================
-echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url]);
-echo html_writer::start_tag('div');
-
-// Selector de validaciones
-echo html_writer::select(
-    $selectoptions,       // opciones de <select>
-    'validation',         // nombre del campo
-    $selectedvalidation,  // valor seleccionado actual
-    false                 // opción nula, la omitimos porque ya añadimos la '' = ALL
-);
-
-// Botón de envío
-echo html_writer::empty_tag('input', [
-    'type'  => 'submit',
-    'value' => get_string('search')
-]);
-
-echo html_writer::end_tag('div');
-echo html_writer::end_tag('form');
-
-// ========================================
-// 4. CONFIGURAMOS LA TABLA Y EL FILTRO
-// ========================================
 $table = new invalid_courses_table('invalid-courses-table');
 $table->define_baseurl($PAGE->url);
 
-// Definimos los campos, from y where de la consulta principal.
 $fields = "
     v.id AS resultid,
     c.id AS courseid,
@@ -150,22 +122,12 @@ $from = "
     LEFT JOIN {modules} m ON cm.module = m.id
 ";
 
-// Empezamos el WHERE con la condición de "passed=0"
 $where = "v.passed = 0";
 $params = ['contextlevel' => CONTEXT_MODULE];
 
-// Si el usuario ha seleccionado una validación, filtramos por ella.
-if (!empty($selectedvalidation)) {
-    $where .= " AND v.validationname = :val";
-    $params['val'] = $selectedvalidation;
-}
-
-// Ahora establecemos la consulta final en la tabla
 $table->set_sql($fields, $from, $where, $params);
 
-// ========================================
-// 5. MOSTRAMOS LA TABLA
-// ========================================
+// Renderizar la tabla.
 $table->out(10, true);
 
 echo $OUTPUT->footer();
