@@ -853,14 +853,16 @@ class block_validador extends block_base {
 
     private function labelvalidation($quiz) {
         global $COURSE, $DB;
+    
         $validations = [];
         $labels_valid = false;
-         // Validación: verificar que cada cuestionario tenga un área de texto y medios en la misma semana
+    
+        // Validación: verificar que cada cuestionario tenga un área de texto y medios en la misma semana
         $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
         $sectionquiz = $DB->get_record_sql('SELECT section FROM {course_modules} WHERE id = ?', [$cm->id]);
         $section = $DB->get_record('course_sections', ['id' => $sectionquiz->section]);
         $sequence = explode(',', $section->sequence);
-        $label_found = false;
+    
         foreach ($sequence as $cmid) {
             $cm = get_coursemodule_from_id(null, $cmid);
             if ($cm && $cm->modname == 'label') {
@@ -868,17 +870,31 @@ class block_validador extends block_base {
                 if ($label) {
                     // Eliminar etiquetas HTML del texto del label.
                     $intro_text = strip_tags($label->intro);
-
-                    // Texto a buscar, sin formato.
-                    $expected_text = 'Si tiene problemas técnicos para acceder al examen, contacte por correo electrónico a la siguiente dirección: innovacion@udima.es';
-                    // Comparar ignorando formato.
-                    if (strpos($intro_text, $expected_text) !== false) {
+    
+                    // Palabras clave esperadas en el texto del label
+                    $keywords = [
+                        'problemas técnicos',
+                        'contacte por correo electrónico',
+                        'innovacion@udima.es'
+                    ];
+    
+                    // Verificar si todas las palabras clave están presentes en el texto
+                    $all_keywords_found = true;
+                    foreach ($keywords as $keyword) {
+                        if (stripos($intro_text, $keyword) === false) {
+                            $all_keywords_found = false;
+                            break;
+                        }
+                    }
+    
+                    if ($all_keywords_found) {
                         $labels_valid = true;
+                        break; // No es necesario seguir buscando
                     }
                 }
             }
         }
-
+    
         $validations[] = [
             'id' => 'label',
             'name' => get_string('label', 'block_validador'),
