@@ -976,7 +976,7 @@ class block_validador extends block_base {
                 $valid_groups[] = $group;
             }
         }
-        $valid_group_names = $valid_group_count >= 2;
+        $valid_group_names = $valid_group_count >= 1;
         $validations[] = [
             'id' => 'groups',
             'contextid' => context_course::instance($COURSE->id)->id,
