@@ -34,22 +34,24 @@ class invalid_courses_table extends table_sql {
     public function __construct($uniqueid) {
         parent::__construct($uniqueid);
 
-        // Definir columnas.
         $this->define_columns([
             'coursename',
             'validationname',
             'activity',
             'timecreated',
             'timemodified',
-            'deleteaction' // Nueva columna para eliminar
+            'editingteachers', // Nueva columna
+            'deleteaction'
         ]);
+
         $this->define_headers([
             get_string('course', 'block_validador'),
             get_string('validation', 'block_validador'),
             get_string('activity', 'block_validador'),
             get_string('timecreated', 'block_validador'),
             get_string('timemodified', 'block_validador'),
-            get_string('delete') // Encabezado de la columna
+            get_string('editingteachers', 'block_validador'), // Encabezado de la nueva columna
+            get_string('delete')
         ]);
 
         $this->sortable(true, 'timemodified', SORT_DESC);
@@ -82,16 +84,42 @@ class invalid_courses_table extends table_sql {
 
     public function col_deleteaction($values) {
         global $OUTPUT, $PAGE;
-
-        // URL para confirmar la eliminación.
         $deleteurl = new moodle_url($PAGE->url, [
             'resultid' => $values->resultid,
             'confirm' => 1,
             'sesskey' => sesskey()
         ]);
-
-        // Botón de eliminación.
         return $OUTPUT->single_button($deleteurl, get_string('delete'), 'post');
+    }
+
+    public function col_editingteachers($values) {
+        global $DB;
+
+        $sql = "
+            SELECT u.firstname, u.lastname
+            FROM {role_assignments} ra
+            JOIN {user} u ON ra.userid = u.id
+            JOIN {context} ctx ON ra.contextid = ctx.id
+            WHERE ctx.contextlevel = :contextlevel
+              AND ctx.instanceid = :courseid
+              AND ra.roleid = :roleid
+        ";
+        $params = [
+            'contextlevel' => CONTEXT_COURSE,
+            'courseid' => $values->courseid,
+            'roleid' => 3 // ID por defecto del rol editingteacher
+        ];
+        $teachers = $DB->get_records_sql($sql, $params);
+
+        if (empty($teachers)) {
+            return get_string('noteachers', 'block_validador');
+        }
+
+        $teacher_names = array_map(function($t) {
+            return $t->firstname . ' ' . $t->lastname;
+        }, $teachers);
+
+        return implode(', ', $teacher_names);
     }
 }
 

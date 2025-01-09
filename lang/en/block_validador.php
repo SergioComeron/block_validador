@@ -56,3 +56,4 @@ $string['showcategories_desc'] = 'Select the course categories you want to displ
 $string['linktoinvalidcourses'] = 'Enlace a cursos inválidos';
 $string['linktoinvalidcourses_desc'] = 'Click here to view the list of invalid courses.';
 $string['delete_success'] = 'The validation has been successfully deleted.';
+$string['editingteachers'] = 'Editing Teachers';
