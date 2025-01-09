@@ -794,29 +794,32 @@ class block_validador extends block_base {
 
     private function validate_quiz_grade_category($quiz) {
         global $DB;
-
+    
         $validations = [];
         $category_valid = false;
-
+    
         // Obtener la categoría de calificación del cuestionario
         $grade_item = $DB->get_record('grade_items', [
             'iteminstance' => $quiz->id,
             'itemmodule' => 'quiz'
         ]);
-
+    
         if ($grade_item) {
+            // Obtener la categoría de calificación asociada al cuestionario
             $category = $DB->get_record('grade_categories', ['id' => $grade_item->categoryid]);
-            if ($category && $category->fullname == 'Examen online') {
+    
+            // Validar insensibilidad a mayúsculas/minúsculas en el nombre de la categoría
+            if ($category && strcasecmp($category->fullname, 'Examen online') === 0) {
                 $category_valid = true;
             }
         }
-
+    
         $validations[] = [
             'id' => 'quizgradecategory',
             'name' => get_string('quizgradecategory', 'block_validador'),
             'passed' => $category_valid
         ];
-
+    
         return $validations;
     }
 
@@ -929,7 +932,7 @@ class block_validador extends block_base {
         $valid_groups = [];
         $groups = groups_get_all_groups($COURSE->id);
         foreach ($groups as $group) {
-            if (preg_match('/^#\d{5}#$/', $group->name)) {
+            if (preg_match('/^#\d{6}#$/', $group->name)) {
                 $valid_group_count++;
                 $valid_groups[] = $group;
             }
