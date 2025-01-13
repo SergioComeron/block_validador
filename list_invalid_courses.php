@@ -18,13 +18,85 @@ $PAGE->set_heading(get_string('invalidcourses', 'block_validador'));
 $resultid = optional_param('resultid', 0, PARAM_INT);
 $confirm  = optional_param('confirm', 0, PARAM_BOOL);
 
+// Verificar si se solicita exportar a CSV.
+$exportcsv = optional_param('exportcsv', 0, PARAM_BOOL);
+
 // Procesar eliminación si se solicita.
 if ($resultid && $confirm && confirm_sesskey()) {
     $DB->delete_records('block_validador_results', ['id' => $resultid]);
     redirect($PAGE->url, get_string('delete_success', 'block_validador'), 2);
 }
 
+// Configuración de campos y consulta SQL para la tabla.
+$fields = "
+    v.id AS resultid,
+    c.id AS courseid,
+    c.fullname AS coursename,
+    v.validationname,
+    v.timecreated,
+    v.timemodified,
+    cm.id AS cmid,
+    m.name AS activity
+";
+
+$from = "
+    {block_validador_results} v
+    JOIN {course} c ON v.courseid = c.id
+    LEFT JOIN {context} ctx ON ctx.id = v.contextid AND ctx.contextlevel = :contextlevel
+    LEFT JOIN {course_modules} cm ON cm.id = ctx.instanceid
+    LEFT JOIN {modules} m ON cm.module = m.id
+";
+
+$where = "v.passed = 0";
+$params = ['contextlevel' => CONTEXT_MODULE];
+
+// Exportar datos a CSV si se solicita.
+if ($exportcsv) {
+    $filename = clean_filename(get_string('invalidcourses', 'block_validador') . '_' . date('Ymd_His') . '.csv');
+
+    // Obtener los datos usando la consulta definida.
+    $rs = $DB->get_recordset_sql("
+        SELECT $fields
+        FROM $from
+        WHERE $where
+    ", $params);
+
+    // Generar el archivo CSV.
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+    $output = fopen('php://output', 'w');
+
+    // Encabezados del CSV.
+    fputcsv($output, [
+        get_string('course', 'block_validador'),
+        get_string('validation', 'block_validador'),
+        get_string('activity', 'block_validador'),
+        get_string('timecreated', 'block_validador'),
+        get_string('timemodified', 'block_validador')
+    ]);
+
+    // Agregar filas de datos.
+    foreach ($rs as $record) {
+        fputcsv($output, [
+            $record->coursename,
+            $record->validationname,
+            $record->activity,
+            userdate($record->timecreated),
+            userdate($record->timemodified)
+        ]);
+    }
+    $rs->close();
+
+    fclose($output);
+    exit;
+}
+
 echo $OUTPUT->header();
+
+// Botón de exportación a CSV.
+$exportcsvurl = new moodle_url($PAGE->url, ['exportcsv' => 1]);
+echo $OUTPUT->single_button($exportcsvurl, get_string('exportcsv', 'block_validador'));
 
 /**
  * Clase de la tabla personalizada.
@@ -40,7 +112,7 @@ class invalid_courses_table extends table_sql {
             'activity',
             'timecreated',
             'timemodified',
-            'editingteachers', // Nueva columna
+            'editingteachers',
             'deleteaction'
         ]);
 
@@ -50,7 +122,7 @@ class invalid_courses_table extends table_sql {
             get_string('activity', 'block_validador'),
             get_string('timecreated', 'block_validador'),
             get_string('timemodified', 'block_validador'),
-            get_string('editingteachers', 'block_validador'), // Encabezado de la nueva columna
+            get_string('editingteachers', 'block_validador'),
             get_string('delete')
         ]);
 
@@ -123,39 +195,10 @@ class invalid_courses_table extends table_sql {
     }
 }
 
-// ========================================
-// Configuración de la tabla y consulta SQL
-// ========================================
-global $DB;
-
+// Configuración de la tabla y consulta SQL.
 $table = new invalid_courses_table('invalid-courses-table');
 $table->define_baseurl($PAGE->url);
-
-$fields = "
-    v.id AS resultid,
-    c.id AS courseid,
-    c.fullname AS coursename,
-    v.validationname,
-    v.timecreated,
-    v.timemodified,
-    cm.id AS cmid,
-    m.name AS activity
-";
-
-$from = "
-    {block_validador_results} v
-    JOIN {course} c ON v.courseid = c.id
-    LEFT JOIN {context} ctx ON ctx.id = v.contextid AND ctx.contextlevel = :contextlevel
-    LEFT JOIN {course_modules} cm ON cm.id = ctx.instanceid
-    LEFT JOIN {modules} m ON cm.module = m.id
-";
-
-$where = "v.passed = 0";
-$params = ['contextlevel' => CONTEXT_MODULE];
-
 $table->set_sql($fields, $from, $where, $params);
-
-// Renderizar la tabla.
 $table->out(10, true);
 
 echo $OUTPUT->footer();
