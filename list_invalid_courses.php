@@ -92,7 +92,16 @@ if ($exportcsv) {
     exit;
 }
 
+// Obtener el número total de validaciones erróneas.
+$total_invalidations = $DB->count_records_select(
+    'block_validador_results',
+    'passed = 0'
+);
+
 echo $OUTPUT->header();
+
+// Mostrar el total de validaciones erróneas.
+echo $OUTPUT->heading(get_string('totalinvalidations', 'block_validador') . ': ' . $total_invalidations, 4);
 
 // Botón de exportación a CSV.
 $exportcsvurl = new moodle_url($PAGE->url, ['exportcsv' => 1]);

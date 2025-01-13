@@ -61,3 +61,4 @@ $string['validador:addinstance'] = 'Add a new validadorblock';
 $string['validador:view'] = 'View validadorblock';
 $string['validador:myaddinstance'] = 'Add a new validadorblock to the My Moodle page';
 $string['exportcsv'] = 'Export to CSV';
+$string['totalinvalidations'] = 'Total invalidations';
