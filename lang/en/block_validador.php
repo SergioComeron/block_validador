@@ -57,3 +57,6 @@ $string['linktoinvalidcourses'] = 'Enlace a cursos inválidos';
 $string['linktoinvalidcourses_desc'] = 'Click here to view the list of invalid courses.';
 $string['delete_success'] = 'The validation has been successfully deleted.';
 $string['editingteachers'] = 'Editing Teachers';
+$string['validador:addinstance'] = 'Add a new validadorblock';
+$string['validador:view'] = 'View validadorblock';
+$string['validador:myaddinstance'] = 'Add a new validadorblock to the My Moodle page';

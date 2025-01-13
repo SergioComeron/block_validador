@@ -37,7 +37,7 @@ class block_validador extends block_base {
         }
 
         // Verificar la capacidad:
-        if (!has_capability('block/validador:view', $this->context)) {
+        if (!has_capability('block/validador:view', context_course::instance($COURSE->id))) {
             // Si el usuario no tiene la capacidad, no mostrar nada.
             // Podrías retornar vacío o un mensaje, según prefieras.
             $this->content = new stdClass();
