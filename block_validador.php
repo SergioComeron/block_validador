@@ -809,7 +809,7 @@ class block_validador extends block_base {
             $category = $DB->get_record('grade_categories', ['id' => $grade_item->categoryid]);
     
             // Validar insensibilidad a mayúsculas/minúsculas en el nombre de la categoría
-            if ($category && strcasecmp($category->fullname, 'Examen online') === 0) {
+            if ($category && (strcasecmp(trim($category->fullname), 'Examen online') === 0 || strcasecmp(trim($category->fullname), 'Examen final online') === 0)) {
                 $category_valid = true;
             }
         }
@@ -1060,7 +1060,7 @@ class block_validador extends block_base {
             // Verificar que exista al menos una subcategoría llamada "Examen online" (insensible a mayúsculas/minúsculas)
             $exam_online_subcategory_exists = false;
             foreach ($subcategories as $subcategory) {
-                if (strcasecmp($subcategory->fullname, 'Examen online') === 0) {
+                if (strcasecmp(trim($subcategory->fullname), 'Examen online') === 0 || strcasecmp(trim($subcategory->fullname), 'Examen final online') === 0) {
                     $exam_online_subcategory_exists = true;
                     break;
                 }
@@ -1105,7 +1105,7 @@ class block_validador extends block_base {
             // Verificar que exista al menos una subcategoría llamada "Examen presencial" (insensible a mayúsculas/minúsculas)
             $exam_online_subcategory_exists = false;
             foreach ($subcategories as $subcategory) {
-                if (strcasecmp($subcategory->fullname, 'Examen presencial') === 0) {
+                if (strcasecmp(trim($subcategory->fullname), 'Examen presencial') === 0 || strcasecmp(trim($subcategory->fullname), 'Examen final presencial') === 0) {
                     $exam_online_subcategory_exists = true;
                     break;
                 }
@@ -1170,8 +1170,8 @@ class block_validador extends block_base {
             "SELECT * 
              FROM {grade_categories} 
              WHERE courseid = :courseid 
-             AND LOWER(fullname) = LOWER(:fullname)",
-            ['courseid' => $COURSE->id, 'fullname' => 'Examen presencial']
+             AND (LOWER(TRIM(fullname)) = LOWER(:fullname1) OR LOWER(TRIM(fullname)) = LOWER(:fullname2))",
+            ['courseid' => $COURSE->id, 'fullname1' => 'Examen presencial', 'fullname2' => 'Examen final presencial']
         );
     
         if ($exam_presencial_category) {
@@ -1196,13 +1196,13 @@ class block_validador extends block_base {
         global $DB, $COURSE;
         $aggregation_correcta = true;
     
-        // Buscar categoría insensible a mayúsculas/minúsculas
+        // Buscar categoría insensible a mayúsculas/minúsculas y con posibles espacios al final
         $exam_online_category = $DB->get_record_sql(
             "SELECT * 
              FROM {grade_categories} 
              WHERE courseid = :courseid 
-             AND LOWER(fullname) = LOWER(:fullname)",
-            ['courseid' => $COURSE->id, 'fullname' => 'Examen online']
+             AND (LOWER(TRIM(fullname)) = LOWER(:fullname1) OR LOWER(TRIM(fullname)) = LOWER(:fullname2))",
+            ['courseid' => $COURSE->id, 'fullname1' => 'Examen online', 'fullname2' => 'Examen final online']
         );
     
         if ($exam_online_category) {
