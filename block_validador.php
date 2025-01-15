@@ -953,7 +953,6 @@ class block_validador extends block_base {
             $valid_groups[] = $group;
             }
         }
-        print_r($valid_groups);
         $quizzes_valid = true;
         // Vamos a validar todos los cuestionarios.
         foreach ($valid_groups as $group) {
