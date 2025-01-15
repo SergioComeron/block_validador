@@ -382,7 +382,7 @@ class block_validador extends block_base {
             $valid_group_count = 0;
             $valid_groups = [];
             foreach ($groups as $group) {
-                if (preg_match('/^#\d{6}#$/', $group->name)) {
+                if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes') {
                     $valid_group_count++;
                     $valid_groups[] = $group;
                 }
@@ -948,11 +948,12 @@ class block_validador extends block_base {
         $valid_groups = [];
         $groups = groups_get_all_groups($COURSE->id);
         foreach ($groups as $group) {
-            if (preg_match('/^#\d{6}#$/', $group->name)) {
-                $valid_group_count++;
-                $valid_groups[] = $group;
+            if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes') {
+            $valid_group_count++;
+            $valid_groups[] = $group;
             }
         }
+        print_r($valid_groups);
         $quizzes_valid = true;
         // Vamos a validar todos los cuestionarios.
         foreach ($valid_groups as $group) {
@@ -990,7 +991,7 @@ class block_validador extends block_base {
         $valid_group_count = 0;
         $valid_groups = [];
         foreach ($groups as $group) {
-            if (preg_match('/^#\d{6}#$/', $group->name)) {
+            if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes') {
                 $valid_group_count++;
                 $valid_groups[] = $group;
             }
