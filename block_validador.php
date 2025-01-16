@@ -672,7 +672,6 @@ class block_validador extends block_base {
                     $validations_passed = $validations_passed && $validation['passed'];
                 }
                 }
-                
             }
         }
         
@@ -1017,7 +1016,7 @@ class block_validador extends block_base {
             "SELECT * 
              FROM {grade_categories} 
              WHERE courseid = :courseid 
-             AND LOWER(fullname) = LOWER(:fullname)",
+             AND LOWER(TRIM(fullname)) = LOWER(:fullname)",
             ['courseid' => $COURSE->id, 'fullname' => 'Examen final']
         );
     
@@ -1049,7 +1048,7 @@ class block_validador extends block_base {
             "SELECT * 
              FROM {grade_categories} 
              WHERE courseid = :courseid 
-             AND LOWER(fullname) = LOWER(:fullname)",
+             AND LOWER(TRIM(fullname)) = LOWER(:fullname)",
             ['courseid' => $COURSE->id, 'fullname' => 'Examen final']
         );
     
@@ -1094,7 +1093,7 @@ class block_validador extends block_base {
             "SELECT * 
              FROM {grade_categories} 
              WHERE courseid = :courseid 
-             AND LOWER(fullname) = LOWER(:fullname)",
+             AND LOWER(TRIM(fullname)) = LOWER(:fullname)",
             ['courseid' => $COURSE->id, 'fullname' => 'Examen final']
         );
     
@@ -1138,7 +1137,7 @@ class block_validador extends block_base {
             "SELECT * 
              FROM {grade_categories} 
              WHERE courseid = :courseid 
-             AND LOWER(fullname) = LOWER(:fullname)",
+             AND LOWER(TRIM(fullname)) = LOWER(:fullname)",
             ['courseid' => $COURSE->id, 'fullname' => 'Examen final']
         );
     
