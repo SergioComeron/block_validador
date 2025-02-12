@@ -42,4 +42,12 @@
             'manager' => CAP_ALLOW
         )
     ),
+    'block/validador:myaddinstance' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'admin' => CAP_ALLOW
+        ],
+            'clonepermissionsfrom' => 'moodle/my:manageblocks'
+        )
 ];
