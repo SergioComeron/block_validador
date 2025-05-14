@@ -63,3 +63,4 @@ $string['validador:view'] = 'Ver el bloque validador';
 $string['validador:myaddinstance'] = 'Agregar un nuevo bloque validador a la página Mi Moodle';
 $string['exportcsv'] = 'Exportar a CSV';
 $string['totalinvalidations'] = 'Total de validaciones no válidas';
+$string['noteachers'] = 'No hay profesores en este curso';

@@ -21,6 +21,13 @@ $confirm  = optional_param('confirm', 0, PARAM_BOOL);
 // Verificar si se solicita exportar a CSV.
 $exportcsv = optional_param('exportcsv', 0, PARAM_BOOL);
 
+// Procesar limpieza completa si se solicita.
+$cleanall = optional_param('cleanall', 0, PARAM_BOOL);
+if ($cleanall && confirm_sesskey()) {
+    $DB->delete_records_select('block_validador_results', 'passed = 0');
+    redirect($PAGE->url, get_string('delete_success', 'block_validador'), 2);
+}
+
 // Procesar eliminación si se solicita.
 if ($resultid && $confirm && confirm_sesskey()) {
     $DB->delete_records('block_validador_results', ['id' => $resultid]);
@@ -103,9 +110,13 @@ echo $OUTPUT->header();
 // Mostrar el total de validaciones erróneas.
 echo $OUTPUT->heading(get_string('totalinvalidations', 'block_validador') . ': ' . $total_invalidations, 4);
 
-// Botón de exportación a CSV.
+// Botones de acción
 $exportcsvurl = new moodle_url($PAGE->url, ['exportcsv' => 1]);
 echo $OUTPUT->single_button($exportcsvurl, get_string('exportcsv', 'block_validador'));
+
+// Botón para limpiar todos los registros.
+$cleanallurl = new moodle_url($PAGE->url, ['cleanall' => 1, 'sesskey' => sesskey()]);
+echo $OUTPUT->single_button($cleanallurl, 'Limpiar todos los registros', 'post');
 
 /**
  * Clase de la tabla personalizada.
