@@ -25,7 +25,7 @@
  // General strings
 $string['pluginname'] = 'Validador';
 $string['message'] = 'Hello, you are in the course: {$a}.';
-$string['nogroups'] = 'No hay grupos en este curso';
+$string['nogroups'] = 'There are no groups in this course';
 $string['groups'] = 'There are valid groups';
 $string['groupwithquizzes'] = 'All groups have quizzes';
 $string['gradebook'] = 'There is a Final Exam category';
@@ -45,7 +45,7 @@ $string['validation'] = 'Validation';
 $string['timecreated'] = 'Created Time';
 $string['timemodified'] = 'Modified Time';
 $string['nocoursesfound'] = 'No courses with validation errors found.';
-$string['totalinvalidcourses'] = 'Total de cursos con validaciones no válidas: {$a}';
+$string['totalinvalidcourses'] = 'Total courses with invalid validations: {$a}';
 $string['activity'] = 'Activity';
 $string['gradebook_subcategorie_examenonline'] = 'Examen final have Examen Online subcategory';
 $string['gradebook_subcategorie_examenpresencial'] = 'Examen final have Examen Presencial subcategory';
@@ -54,7 +54,7 @@ $string['gradebook_examenonline_aggregation'] = 'Examen Online category aggregat
 $string['gradebook_examenpresencial_aggregation'] = 'Examen Presencial category aggregation';
 $string['showcategories'] = 'Show categories';
 $string['showcategories_desc'] = 'Select the course categories you want to display.';
-$string['linktoinvalidcourses'] = 'Enlace a cursos inválidos';
+$string['linktoinvalidcourses'] = 'Link to invalid courses';
 $string['linktoinvalidcourses_desc'] = 'Click here to view the list of invalid courses.';
 $string['delete_success'] = 'The validation has been successfully deleted.';
 $string['editingteachers'] = 'Editing Teachers';
