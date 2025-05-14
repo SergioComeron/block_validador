@@ -29,6 +29,7 @@ $string['nogroups'] = 'No hay grupos en este curso';
 $string['groups'] = 'There are valid groups';
 $string['groupwithquizzes'] = 'All groups have quizzes';
 $string['gradebook'] = 'There is a Final Exam category';
+$string['gradebook_online'] = 'There is a Online Exam category';
 $string['smowl'] = 'There is a SMOWL block';
 $string['quiztimelimit'] = 'Quiz Time Limit';
 $string['quizquestionsperpage'] = 'Questions on one page';

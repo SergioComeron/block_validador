@@ -134,7 +134,7 @@ class block_validador extends block_base {
         
         $this->content->text .= "<h4>Libro de Calificaciones</h4>";
 
-        $validationsgradebook = $this->performs_validations_gradebook();
+        $validationsgradebook = $this->performs_validations_gradebook_final();
         foreach ($validationsgradebook as $validation) {
             $contextid = $validation['contextid']; // Asegúrate de que 'contextid' esté disponible en tu validación
             $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
@@ -168,7 +168,7 @@ class block_validador extends block_base {
             $validations_passed = $validations_passed && $validation['passed'];
         }
 
-        $validationsgradebooksubcategorieexamenonline = $this->performs_validations_gradebook_subcategorie_examenonline();
+        $validationsgradebooksubcategorieexamenonline = $this->performs_validations_gradebook_online();
         foreach ($validationsgradebooksubcategorieexamenonline as $validation) {
             $contextid = $validation['contextid']; // Asegúrate de que 'contextid' esté disponible en tu validación
             $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
@@ -202,7 +202,7 @@ class block_validador extends block_base {
             $validations_passed = $validations_passed && $validation['passed'];
         }
 
-        $validationsgradebooksubcategorieexamenpresencial = $this->performs_validations_gradebook_subcategorie_examenpresencial();
+        /* $validationsgradebooksubcategorieexamenpresencial = $this->performs_validations_gradebook_subcategorie_examenpresencial();
         foreach($validationsgradebooksubcategorieexamenpresencial as $validation) {
             $contextid = $validation['contextid']; // Asegúrate de que 'contextid' esté disponible en tu validación
             $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
@@ -234,9 +234,9 @@ class block_validador extends block_base {
             $color = $validation['passed'] ? 'black' : 'red';
             $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
             $validations_passed = $validations_passed && $validation['passed'];
-        }
+        } */
 
-        $validationsgradebookexamenfinalaggregation = $this->validate_examen_final_aggregation();
+        /* $validationsgradebookexamenfinalaggregation = $this->validate_examen_final_aggregation();
         foreach($validationsgradebookexamenfinalaggregation as $validation) {
             $contextid = $validation['contextid']; // Asegúrate de que 'contextid' esté disponible en tu validación
             $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
@@ -268,9 +268,9 @@ class block_validador extends block_base {
             $color = $validation['passed'] ? 'black' : 'red';
             $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
             $validations_passed = $validations_passed && $validation['passed'];
-        }
+        } */
 
-        $validationsgradebookexamenonlineaggregation = $this->validate_examen_online_aggregation();
+        /* $validationsgradebookexamenonlineaggregation = $this->validate_examen_online_aggregation();
         foreach($validationsgradebookexamenonlineaggregation as $validation) {
             $contextid = $validation['contextid']; // Asegúrate de que 'contextid' esté disponible en tu validación
             $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
@@ -302,9 +302,9 @@ class block_validador extends block_base {
             $color = $validation['passed'] ? 'black' : 'red';
             $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
             $validations_passed = $validations_passed && $validation['passed'];
-        }
+        } */
 
-        $validationsgradebookexamenpresencialaggregation = $this->validate_examen_presencial_aggregation();
+        /* $validationsgradebookexamenpresencialaggregation = $this->validate_examen_presencial_aggregation();
         foreach($validationsgradebookexamenpresencialaggregation as $validation) {
             $contextid = $validation['contextid']; // Asegúrate de que 'contextid' esté disponible en tu validación
             $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
@@ -336,7 +336,7 @@ class block_validador extends block_base {
             $color = $validation['passed'] ? 'black' : 'red';
             $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
             $validations_passed = $validations_passed && $validation['passed'];
-        }
+        } */
 
         $this->content->text .= "<h4>Smowl</h4>";
 
@@ -874,7 +874,9 @@ class block_validador extends block_base {
                     $keywords = [
                         'problemas técnicos',
                         'contacte por correo electrónico',
-                        'innovacion@udima.es'
+                        'innovacion@udima.es',
+                        'examenes@udima.es',
+                        'académica'
                     ];
     
                     // Verificar si todas las palabras clave están presentes en el texto
@@ -923,7 +925,7 @@ class block_validador extends block_base {
 
     private function timelimitvalidation($quiz) {
         $validations = [];
-        if ($quiz->timelimit == 5400) { // 5400 segundos = 90 minutos
+        if ($quiz->timelimit == 5400 || $quiz->timelimit == 2700) { // 5400 segundos = 90 minutos, 2700 segundos = 45 minutos
             $validations[] = [
                 'id' => 'quiztimelimit',
                 'name' => get_string('quiztimelimit', 'block_validador'),
@@ -948,25 +950,33 @@ class block_validador extends block_base {
         $groups = groups_get_all_groups($COURSE->id);
         foreach ($groups as $group) {
             if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes') {
-            $valid_group_count++;
-            $valid_groups[] = $group;
+                $valid_group_count++;
+                $valid_groups[] = $group;
             }
         }
+
         $quizzes_valid = true;
+        $has_quizzes = false;
+
         // Vamos a validar todos los cuestionarios.
         foreach ($valid_groups as $group) {
             // Buscar el cuestionario cuyo nombre es igual al nombre del grupo
             $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
             if ($quiz) {
-                
+                $has_quizzes = true;
                 // $this->validate_quiz($quiz, $group);
-
             } else {
                 // No se encontró un cuestionario con el nombre del grupo
                 $quizzes_valid = false;
                 break;
             }
         }
+
+        // Si no hay cuestionarios, no se puede dar por válido
+        if (!$has_quizzes) {
+            $quizzes_valid = false;
+        }
+
         $validations[] = [
             'id' => 'groupwithquizzes',
             'contextid' => context_course::instance($COURSE->id)->id,
@@ -1005,7 +1015,7 @@ class block_validador extends block_base {
         return $validations;
     }
 
-    private function performs_validations_gradebook() {
+    private function performs_validations_gradebook_final() {
         global $COURSE, $DB, $CFG;
     
         // Validación: verificar la estructura del libro de calificaciones
@@ -1037,52 +1047,35 @@ class block_validador extends block_base {
         return $validationsgradebook;
     }
 
-    private function performs_validations_gradebook_subcategorie_examenonline() {
+    private function performs_validations_gradebook_online() {
         global $COURSE, $DB, $CFG;
     
         // Validación: verificar la estructura del libro de calificaciones
         $gradebook_valid = true;
     
-        // Obtener la categoría "Examen final" (insensible a mayúsculas/minúsculas)
-        $exam_final_category = $DB->get_record_sql(
+        // Obtener la categoría principal "Examen online" (insensible a mayúsculas/minúsculas)
+        $exam_online_category = $DB->get_record_sql(
             "SELECT * 
              FROM {grade_categories} 
              WHERE courseid = :courseid 
              AND LOWER(TRIM(fullname)) = LOWER(:fullname)",
-            ['courseid' => $COURSE->id, 'fullname' => 'Examen final']
+            ['courseid' => $COURSE->id, 'fullname' => 'Examen online']
         );
-    
-        if ($exam_final_category) {
-            // Obtener las subcategorías de la categoría "Examen final"
-            $subcategories = $DB->get_records('grade_categories', ['parent' => $exam_final_category->id]);
-    
-            // Verificar que exista al menos una subcategoría llamada "Examen online" (insensible a mayúsculas/minúsculas)
-            $exam_online_subcategory_exists = false;
-            foreach ($subcategories as $subcategory) {
-                if (strcasecmp(trim($subcategory->fullname), 'Examen online') === 0 || strcasecmp(trim($subcategory->fullname), 'Examen final online') === 0) {
-                    $exam_online_subcategory_exists = true;
-                    break;
-                }
-            }
-    
-            if (!$exam_online_subcategory_exists) {
-                $gradebook_valid = false;
-            }
-        } else {
+        if (!$exam_online_category) {
             $gradebook_valid = false;
         }
     
         $validationsgradebook[] = [
             'id' => 'gradebook_subcategorie_examenonline',
             'contextid' => context_course::instance($COURSE->id)->id,
-            'name' => get_string('gradebook_subcategorie_examenonline', 'block_validador'),
+            'name' => get_string('gradebook_online', 'block_validador'),
             'passed' => $gradebook_valid
         ];
     
         return $validationsgradebook;
     }
 
-    private function performs_validations_gradebook_subcategorie_examenpresencial() {
+    /* private function performs_validations_gradebook_subcategorie_examenpresencial() {
         global $COURSE, $DB, $CFG;
     
         // Validación: verificar la estructura del libro de calificaciones
@@ -1125,9 +1118,9 @@ class block_validador extends block_base {
         ];
     
         return $validationsgradebook;
-    }
+    } */
 
-    private function validate_examen_final_aggregation() {
+    /* private function validate_examen_final_aggregation() {
         global $DB, $COURSE;
     
         $aggregation_correcta = true;
@@ -1158,9 +1151,9 @@ class block_validador extends block_base {
         ];
     
         return $validationsgradebook;
-    }
+    } */
 
-    private function validate_examen_presencial_aggregation() {
+    /* private function validate_examen_presencial_aggregation() {
         global $DB, $COURSE;
         $aggregation_correcta = true;
     
@@ -1189,9 +1182,9 @@ class block_validador extends block_base {
         ];
     
         return $validationsgradebook;
-    }
+    } */
 
-    private function validate_examen_online_aggregation() {
+    /* private function validate_examen_online_aggregation() {
         global $DB, $COURSE;
         $aggregation_correcta = true;
     
@@ -1220,7 +1213,7 @@ class block_validador extends block_base {
         ];
     
         return $validationsgradebook;
-    }
+    } */
 
     private function grouprestictionvalidation($quiz, $group) {
         global $DB, $COURSE;
