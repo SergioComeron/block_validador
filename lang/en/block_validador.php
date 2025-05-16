@@ -64,3 +64,4 @@ $string['validador:myaddinstance'] = 'Add a new validadorblock to the My Moodle 
 $string['exportcsv'] = 'Export to CSV';
 $string['totalinvalidations'] = 'Total invalidations';
 $string['noteachers'] = 'There are no teachers in this course';
+$string['quizhaspledgeabove'] = 'Quiz has pledge above';
