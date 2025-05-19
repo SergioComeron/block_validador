@@ -398,6 +398,34 @@ class block_validador extends block_base {
                 $context = context_module::instance($cm->id);
                 $contextid = $context->id;
     
+                $validationspledgeaccess = $this->validate_quiz_pledge_access($quiz);
+                foreach ($validationspledgeaccess as $validation) {
+                    $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+                    $existing = $DB->get_record('block_validador_results', $params);
+                    $newpassed = $validation['passed'] ? 1 : 0;
+                    if (!$existing) {
+                        $record = new stdClass();
+                        $record->contextid = $contextid;
+                        $record->validationname = $validation['id'];
+                        $record->courseid = $COURSE->id;
+                        $record->passed = $newpassed;
+                        $record->timecreated = time();
+                        $record->timemodified = time();
+                        $DB->insert_record('block_validador_results', $record);
+                    } else {
+                        if ($existing->passed != $newpassed) {
+                            $existing->passed = $newpassed;
+                            $existing->timemodified = time();
+                            $DB->update_record('block_validador_results', $existing);
+                        }
+                    }
+                    $status = $validation['passed'] ? '🟢' : '🔴';
+                    $color = $validation['passed'] ? 'black' : 'red';
+                    $this->content->text .= "<span style='color: $color;'>$status {$validation['name']}</span><br>";
+                    $validations_passed = $validations_passed && $validation['passed'];
+                }
+
+
                 $validationstimelimit = $this->timelimitvalidation($quiz);
                 foreach ($validationstimelimit as $validation) {
                     // $contextid = context_module::instance($quiz->cmid)->id;
@@ -920,6 +948,7 @@ class block_validador extends block_base {
         // Obtener el course module que está justo antes del cuestionario.
         $prevCmid = $cmids[$currentIndex - 1];
         $prevModule = get_coursemodule_from_id(null, $prevCmid, 0, false, MUST_EXIST);
+
         if ($prevModule && $prevModule->modname === 'pledge') {
             // Verificar que el pledge esté configurado para completarse al ser visto.
             // Suponemos que esta configuración se almacena en el campo 'completionview'
@@ -948,6 +977,57 @@ class block_validador extends block_base {
 
         return $validations;
     }
+
+    private function validate_quiz_pledge_access($quiz) {
+        global $COURSE;
+    
+        // Obtener el course module del cuestionario.
+        $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
+        $pledgeRestrictionValid = false;
+    
+        // Verificar que el cuestionario tenga restricciones de acceso configuradas.
+        if ($cm && !empty($cm->availability)) {
+            $availability = json_decode($cm->availability);
+
+            // Buscar recursivamente una condición de tipo 'completion' marcada como completada.
+            $pledgeRestrictionValid = $this->check_completion_condition($availability);
+        }
+    
+        return [
+            [
+                'id'      => 'quizpledgeaccess',
+                'name'    => get_string('quizpledgeaccess', 'block_validador'),
+                'passed'  => $pledgeRestrictionValid
+            ]
+        ];
+    }
+
+    private function check_completion_condition($availability) {
+            global $DB;
+            // Si la condición es de tipo "completion"
+            if (isset($availability->type) && $availability->type === 'completion') {
+                if (isset($availability->cm)) {
+                    $cmid = $availability->cm;
+                    $pledgecm = get_coursemodule_from_id('pledge', $cmid, 0, false);
+                    if ($pledgecm) {
+                        $pledge = $DB->get_record('pledge', ['id' => $pledgecm->instance]);
+                        if ($pledge && preg_match('/\#\d{6}\#/', $pledge->name)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            // Recorrer recursivamente las condiciones hijas
+            if (isset($availability->c) && is_array($availability->c)) {
+                foreach ($availability->c as $condition) {
+                    if ($this->check_completion_condition($condition)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+    
 
     
 

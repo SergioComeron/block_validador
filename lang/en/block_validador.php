@@ -65,3 +65,4 @@ $string['exportcsv'] = 'Export to CSV';
 $string['totalinvalidations'] = 'Total invalidations';
 $string['noteachers'] = 'There are no teachers in this course';
 $string['quizhaspledgeabove'] = 'Quiz has pledge above';
+$string['quizpledgeaccess'] = 'Quiz Pledge Restriction';

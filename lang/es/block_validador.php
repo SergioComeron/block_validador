@@ -65,3 +65,4 @@ $string['exportcsv'] = 'Exportar a CSV';
 $string['totalinvalidations'] = 'Total de validaciones no válidas';
 $string['noteachers'] = 'No hay profesores en este curso';
 $string['quizhaspledgeabove'] = 'El cuestionario tiene código de honor arriba';
+$string['quizpledgeaccess'] = 'El cuestionario tiene restricción de código de honor';
