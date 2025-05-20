@@ -20,6 +20,10 @@ $confirm  = optional_param('confirm', 0, PARAM_BOOL);
 
 // Verificar si se solicita exportar a CSV.
 $exportcsv = optional_param('exportcsv', 0, PARAM_BOOL);
+$exportsummarycsv = optional_param('exportsummarycsv', 0, PARAM_BOOL);
+
+// Recuperar parámetro para filtrar por curso.
+$filtercourse = optional_param('filtercourse', 0, PARAM_INT);
 
 // Procesar limpieza completa si se solicita.
 $cleanall = optional_param('cleanall', 0, PARAM_BOOL);
@@ -56,6 +60,25 @@ $from = "
 
 $where = "v.passed = 0";
 $params = ['contextlevel' => CONTEXT_MODULE];
+
+if (!empty($filtercourse)) {
+    $where .= " AND v.courseid = :filtercourse";
+    $params['filtercourse'] = $filtercourse;
+}
+
+// Consulta para agrupar por curso.
+$sql = "
+    SELECT
+        c.id AS courseid,
+        c.fullname AS coursename,
+        COUNT(v.id) AS errorcount
+    FROM {block_validador_results} v
+    JOIN {course} c ON v.courseid = c.id
+    WHERE v.passed = 0
+    GROUP BY c.id, c.fullname
+    ORDER BY errorcount DESC
+";
+$courses = $DB->get_records_sql($sql);
 
 // Exportar datos a CSV si se solicita.
 if ($exportcsv) {
@@ -99,6 +122,53 @@ if ($exportcsv) {
     exit;
 }
 
+// Exportar resumen a CSV si se solicita.
+if ($exportsummarycsv) {
+    $filename = clean_filename(get_string('invalidcourses_summary', 'block_validador') . '_' . date('Ymd_His') . '.csv');
+
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+    $output = fopen('php://output', 'w');
+    // Encabezados del CSV.
+    fputcsv($output, [
+        get_string('course', 'block_validador'),
+        get_string('invalidcount', 'block_validador'),
+        get_string('editingteachers', 'block_validador')
+    ]);
+
+    foreach ($courses as $course) {
+        // Obtener profesores.
+        $sqlteachers = "
+            SELECT u.firstname, u.lastname
+            FROM {role_assignments} ra
+            JOIN {user} u ON ra.userid = u.id
+            JOIN {context} ctx ON ra.contextid = ctx.id
+            WHERE ctx.contextlevel = :contextlevel
+              AND ctx.instanceid = :courseid
+              AND ra.roleid = :roleid
+        ";
+        $teacherparams = [
+            'contextlevel' => CONTEXT_COURSE,
+            'courseid' => $course->courseid,
+            'roleid' => 3 // editingteacher
+        ];
+        $teachers = $DB->get_records_sql($sqlteachers, $teacherparams);
+        $teacher_names = array_map(function($t) {
+            return $t->firstname . ' ' . $t->lastname;
+        }, $teachers);
+        $teachers_str = implode(', ', $teacher_names);
+
+        fputcsv($output, [
+            $course->coursename,
+            $course->errorcount,
+            $teachers_str ?: get_string('noteachers', 'block_validador')
+        ]);
+    }
+    fclose($output);
+    exit;
+}
+
 // Obtener el número total de validaciones erróneas.
 $total_invalidations = $DB->count_records_select(
     'block_validador_results',
@@ -114,9 +184,56 @@ echo $OUTPUT->heading(get_string('totalinvalidations', 'block_validador') . ': '
 $exportcsvurl = new moodle_url($PAGE->url, ['exportcsv' => 1]);
 echo $OUTPUT->single_button($exportcsvurl, get_string('exportcsv', 'block_validador'));
 
+$exportsummarycsvurl = new moodle_url($PAGE->url, ['exportsummarycsv' => 1]);
+echo $OUTPUT->single_button($exportsummarycsvurl, get_string('exportsummarycsv', 'block_validador'));
+
 // Botón para limpiar todos los registros.
 $cleanallurl = new moodle_url($PAGE->url, ['cleanall' => 1, 'sesskey' => sesskey()]);
 echo $OUTPUT->single_button($cleanallurl, 'Limpiar todos los registros', 'post');
+
+// Mostrar tabla resumen.
+echo html_writer::start_tag('table', ['class' => 'generaltable']);
+echo html_writer::start_tag('tr');
+echo html_writer::tag('th', get_string('course', 'block_validador'));
+echo html_writer::tag('th', get_string('invalidcount', 'block_validador'));
+echo html_writer::tag('th', get_string('editingteachers', 'block_validador'));
+echo html_writer::tag('th', get_string('details'));
+echo html_writer::end_tag('tr');
+
+foreach ($courses as $course) {
+    // Obtener profesores.
+    $sqlteachers = "
+        SELECT u.firstname, u.lastname
+        FROM {role_assignments} ra
+        JOIN {user} u ON ra.userid = u.id
+        JOIN {context} ctx ON ra.contextid = ctx.id
+        WHERE ctx.contextlevel = :contextlevel
+          AND ctx.instanceid = :courseid
+          AND ra.roleid = :roleid
+    ";
+    $teacherparams = [
+        'contextlevel' => CONTEXT_COURSE,
+        'courseid' => $course->courseid,
+        'roleid' => 3 // editingteacher
+    ];
+    $teachers = $DB->get_records_sql($sqlteachers, $teacherparams);
+    $teacher_names = array_map(function($t) {
+        return $t->firstname . ' ' . $t->lastname;
+    }, $teachers);
+    $teachers_str = implode(', ', $teacher_names);
+
+    // Enlace a detalle (puedes filtrar por courseid en la tabla detallada).
+    $detailurl = new moodle_url($PAGE->url, ['filtercourse' => $course->courseid]);
+
+    echo html_writer::start_tag('tr');
+    echo html_writer::tag('td', $course->coursename);
+    echo html_writer::tag('td', $course->errorcount);
+    echo html_writer::tag('td', $teachers_str ?: get_string('noteachers', 'block_validador'));
+    echo html_writer::tag('td', html_writer::link($detailurl, get_string('details')));
+    echo html_writer::end_tag('tr');
+}
+echo html_writer::end_tag('table');
+echo html_writer::empty_tag('br');
 
 /**
  * Clase de la tabla personalizada.
