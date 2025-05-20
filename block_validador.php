@@ -947,7 +947,10 @@ class block_validador extends block_base {
 
         // Obtener el course module que está justo antes del cuestionario.
         $prevCmid = $cmids[$currentIndex - 1];
-        $prevModule = get_coursemodule_from_id(null, $prevCmid, 0, false, MUST_EXIST);
+        $prevModule = get_coursemodule_from_id(null, $prevCmid, 0, false, IGNORE_MISSING);
+        if (!$prevModule) {
+            return false;
+        }
 
         if ($prevModule && $prevModule->modname === 'pledge') {
             // Verificar que el pledge esté configurado para completarse al ser visto.
