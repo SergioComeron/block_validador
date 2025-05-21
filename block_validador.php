@@ -1135,7 +1135,7 @@ class block_validador extends block_base {
         $groups = groups_get_all_groups($COURSE->id);
 
         foreach ($groups as $group) {
-            if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes') {
+            if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes' && $group->timecreated > 1738337214) {
                 $valid_group_count++;
                 $valid_groups[] = $group;
             }
