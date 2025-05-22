@@ -66,6 +66,9 @@ if (!empty($filtercourse)) {
     $params['filtercourse'] = $filtercourse;
 }
 
+// Agregar filtro por fecha de inicio
+$where .= " AND c.startdate > 1738403639";
+
 // Consulta para agrupar por curso.
 $sql = "
     SELECT
@@ -74,7 +77,7 @@ $sql = "
         COUNT(v.id) AS errorcount
     FROM {block_validador_results} v
     JOIN {course} c ON v.courseid = c.id
-    WHERE v.passed = 0
+    WHERE v.passed = 0 AND c.startdate > 1738403639
     GROUP BY c.id, c.fullname
     ORDER BY errorcount DESC
 ";
