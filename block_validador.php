@@ -73,6 +73,7 @@ class block_validador extends block_base {
             // Si no existe el registro, lo insertamos
             // Si existe, solo actualizamos si hubo un cambio en passed
             if (!$existing) {
+                // Inserción normal.
                 $record = new stdClass();
                 $record->contextid = $contextid;
                 $record->validationname = $validation['id'];
@@ -82,13 +83,14 @@ class block_validador extends block_base {
                 $record->timemodified = time();
                 $DB->insert_record('block_validador_results', $record);
             } else {
-                // Existe un resultado previo, verificar si cambió
-                if ($existing->passed != $newpassed) {
+                // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                if ($existing->passed == 2) {
+                    // No hacer nada.
+                } else if ($existing->passed != $newpassed) {
                     $existing->passed = $newpassed;
                     $existing->timemodified = time();
                     $DB->update_record('block_validador_results', $existing);
                 }
-                // Si no cambió, no hacemos nada.
             }
             $status = $validation['passed'] ? '🟢' : '🔴';
             $color = $validation['passed'] ? 'black' : 'red';
@@ -107,6 +109,7 @@ class block_validador extends block_base {
                 // Si no existe el registro, lo insertamos
                 // Si existe, solo actualizamos si hubo un cambio en passed
                 if (!$existing) {
+                    // Inserción normal.
                     $record = new stdClass();
                     $record->contextid = $contextid;
                     $record->validationname = $validation['id'];
@@ -116,13 +119,14 @@ class block_validador extends block_base {
                     $record->timemodified = time();
                     $DB->insert_record('block_validador_results', $record);
                 } else {
-                    // Existe un resultado previo, verificar si cambió
-                    if ($existing->passed != $newpassed) {
+                    // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                    if ($existing->passed == 2) {
+                        // No hacer nada.
+                    } else if ($existing->passed != $newpassed) {
                         $existing->passed = $newpassed;
                         $existing->timemodified = time();
                         $DB->update_record('block_validador_results', $existing);
                     }
-                    // Si no cambió, no hacemos nada.
                 }
                 $status = $validation['passed'] ? '🟢' : '🔴';
                 $color = $validation['passed'] ? 'black' : 'red';
@@ -145,6 +149,7 @@ class block_validador extends block_base {
             // Si no existe el registro, lo insertamos
             // Si existe, solo actualizamos si hubo un cambio en passed
             if (!$existing) {
+                // Inserción normal.
                 $record = new stdClass();
                 $record->contextid = $contextid;
                 $record->validationname = $validation['id'];
@@ -154,13 +159,14 @@ class block_validador extends block_base {
                 $record->timemodified = time();
                 $DB->insert_record('block_validador_results', $record);
             } else {
-                // Existe un resultado previo, verificar si cambió
-                if ($existing->passed != $newpassed) {
+                // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                if ($existing->passed == 2) {
+                    // No hacer nada.
+                } else if ($existing->passed != $newpassed) {
                     $existing->passed = $newpassed;
                     $existing->timemodified = time();
                     $DB->update_record('block_validador_results', $existing);
                 }
-                // Si no cambió, no hacemos nada.
             }
             $status = $validation['passed'] ? '🟢' : '🔴';
             $color = $validation['passed'] ? 'black' : 'red';
@@ -179,6 +185,7 @@ class block_validador extends block_base {
             // Si no existe el registro, lo insertamos
             // Si existe, solo actualizamos si hubo un cambio en passed
             if (!$existing) {
+                // Inserción normal.
                 $record = new stdClass();
                 $record->contextid = $contextid;
                 $record->validationname = $validation['id'];
@@ -188,13 +195,14 @@ class block_validador extends block_base {
                 $record->timemodified = time();
                 $DB->insert_record('block_validador_results', $record);
             } else {
-                // Existe un resultado previo, verificar si cambió
-                if ($existing->passed != $newpassed) {
+                // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                if ($existing->passed == 2) {
+                    // No hacer nada.
+                } else if ($existing->passed != $newpassed) {
                     $existing->passed = $newpassed;
                     $existing->timemodified = time();
                     $DB->update_record('block_validador_results', $existing);
                 }
-                // Si no cambió, no hacemos nada.
             }
             $status = $validation['passed'] ? '🟢' : '🔴';
             $color = $validation['passed'] ? 'black' : 'red';
@@ -352,6 +360,7 @@ class block_validador extends block_base {
             // Si no existe el registro, lo insertamos
             // Si existe, solo actualizamos si hubo un cambio en passed
             if (!$existing) {
+                // Inserción normal.
                 $record = new stdClass();
                 $record->contextid = $contextid;
                 $record->validationname = $validation['id'];
@@ -361,13 +370,14 @@ class block_validador extends block_base {
                 $record->timemodified = time();
                 $DB->insert_record('block_validador_results', $record);
             } else {
-                // Existe un resultado previo, verificar si cambió
-                if ($existing->passed != $newpassed) {
+                // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                if ($existing->passed == 2) {
+                    // No hacer nada.
+                } else if ($existing->passed != $newpassed) {
                     $existing->passed = $newpassed;
                     $existing->timemodified = time();
                     $DB->update_record('block_validador_results', $existing);
                 }
-                // Si no cambió, no hacemos nada.
             }
             $status = $validation['passed'] ? '🟢' : '🔴';
             $color = $validation['passed'] ? 'black' : 'red';
@@ -404,6 +414,7 @@ class block_validador extends block_base {
                     $existing = $DB->get_record('block_validador_results', $params);
                     $newpassed = $validation['passed'] ? 1 : 0;
                     if (!$existing) {
+                        // Inserción normal.
                         $record = new stdClass();
                         $record->contextid = $contextid;
                         $record->validationname = $validation['id'];
@@ -413,7 +424,10 @@ class block_validador extends block_base {
                         $record->timemodified = time();
                         $DB->insert_record('block_validador_results', $record);
                     } else {
-                        if ($existing->passed != $newpassed) {
+                        // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                        if ($existing->passed == 2) {
+                            // No hacer nada.
+                        } else if ($existing->passed != $newpassed) {
                             $existing->passed = $newpassed;
                             $existing->timemodified = time();
                             $DB->update_record('block_validador_results', $existing);
@@ -437,6 +451,7 @@ class block_validador extends block_base {
                     // Si no existe el registro, lo insertamos
                     // Si existe, solo actualizamos si hubo un cambio en passed
                     if (!$existing) {
+                        // Inserción normal.
                         $record = new stdClass();
                         $record->contextid = $contextid;
                         $record->validationname = $validation['id'];
@@ -446,8 +461,10 @@ class block_validador extends block_base {
                         $record->timemodified = time();
                         $DB->insert_record('block_validador_results', $record);
                     } else {
-                        // Existe un resultado previo, verificar si cambió
-                        if ($existing->passed != $newpassed) {
+                        // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                        if ($existing->passed == 2) {
+                            // No hacer nada.
+                        } else if ($existing->passed != $newpassed) {
                             $existing->passed = $newpassed;
                             $existing->timemodified = time();
                             $DB->update_record('block_validador_results', $existing);
@@ -472,6 +489,7 @@ class block_validador extends block_base {
                     // Si no existe el registro, lo insertamos
                     // Si existe, solo actualizamos si hubo un cambio en passed
                     if (!$existing) {
+                        // Inserción normal.
                         $record = new stdClass();
                         $record->contextid = $contextid;
                         $record->validationname = $validation['id'];
@@ -481,8 +499,10 @@ class block_validador extends block_base {
                         $record->timemodified = time();
                         $DB->insert_record('block_validador_results', $record);
                     } else {
-                        // Existe un resultado previo, verificar si cambió
-                        if ($existing->passed != $newpassed) {
+                        // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                        if ($existing->passed == 2) {
+                            // No hacer nada.
+                        } else if ($existing->passed != $newpassed) {
                             $existing->passed = $newpassed;
                             $existing->timemodified = time();
                             $DB->update_record('block_validador_results', $existing);
@@ -506,6 +526,7 @@ class block_validador extends block_base {
                     // Si no existe el registro, lo insertamos
                     // Si existe, solo actualizamos si hubo un cambio en passed
                     if (!$existing) {
+                        // Inserción normal.
                         $record = new stdClass();
                         $record->contextid = $contextid;
                         $record->validationname = $validation['id'];
@@ -515,8 +536,10 @@ class block_validador extends block_base {
                         $record->timemodified = time();
                         $DB->insert_record('block_validador_results', $record);
                     } else {
-                        // Existe un resultado previo, verificar si cambió
-                        if ($existing->passed != $newpassed) {
+                        // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                        if ($existing->passed == 2) {
+                            // No hacer nada.
+                        } else if ($existing->passed != $newpassed) {
                             $existing->passed = $newpassed;
                             $existing->timemodified = time();
                             $DB->update_record('block_validador_results', $existing);
@@ -540,6 +563,7 @@ class block_validador extends block_base {
                     // Si no existe el registro, lo insertamos
                     // Si existe, solo actualizamos si hubo un cambio en passed
                     if (!$existing) {
+                        // Inserción normal.
                         $record = new stdClass();
                         $record->contextid = $contextid;
                         $record->validationname = $validation['id'];
@@ -549,8 +573,10 @@ class block_validador extends block_base {
                         $record->timemodified = time();
                         $DB->insert_record('block_validador_results', $record);
                     } else {
-                        // Existe un resultado previo, verificar si cambió
-                        if ($existing->passed != $newpassed) {
+                        // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                        if ($existing->passed == 2) {
+                            // No hacer nada.
+                        } else if ($existing->passed != $newpassed) {
                             $existing->passed = $newpassed;
                             $existing->timemodified = time();
                             $DB->update_record('block_validador_results', $existing);
@@ -583,6 +609,7 @@ class block_validador extends block_base {
                     // Si no existe el registro, lo insertamos
                     // Si existe, solo actualizamos si hubo un cambio en passed
                     if (!$existing) {
+                        // Inserción normal.
                         $record = new stdClass();
                         $record->contextid = $contextid;
                         $record->validationname = $validation['id'];
@@ -592,8 +619,10 @@ class block_validador extends block_base {
                         $record->timemodified = time();
                         $DB->insert_record('block_validador_results', $record);
                     } else {
-                        // Existe un resultado previo, verificar si cambió
-                        if ($existing->passed != $newpassed) {
+                        // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                        if ($existing->passed == 2) {
+                            // No hacer nada.
+                        } else if ($existing->passed != $newpassed) {
                             $existing->passed = $newpassed;
                             $existing->timemodified = time();
                             $DB->update_record('block_validador_results', $existing);
@@ -617,6 +646,7 @@ class block_validador extends block_base {
                     // Si no existe el registro, lo insertamos
                     // Si existe, solo actualizamos si hubo un cambio en passed
                     if (!$existing) {
+                        // Inserción normal.
                         $record = new stdClass();
                         $record->contextid = $contextid;
                         $record->validationname = $validation['id'];
@@ -626,8 +656,10 @@ class block_validador extends block_base {
                         $record->timemodified = time();
                         $DB->insert_record('block_validador_results', $record);
                     } else {
-                        // Existe un resultado previo, verificar si cambió
-                        if ($existing->passed != $newpassed) {
+                        // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                        if ($existing->passed == 2) {
+                            // No hacer nada.
+                        } else if ($existing->passed != $newpassed) {
                             $existing->passed = $newpassed;
                             $existing->timemodified = time();
                             $DB->update_record('block_validador_results', $existing);
@@ -651,6 +683,7 @@ class block_validador extends block_base {
                     // Si no existe el registro, lo insertamos
                     // Si existe, solo actualizamos si hubo un cambio en passed
                     if (!$existing) {
+                        // Inserción normal.
                         $record = new stdClass();
                         $record->contextid = $contextid;
                         $record->validationname = $validation['id'];
@@ -660,8 +693,10 @@ class block_validador extends block_base {
                         $record->timemodified = time();
                         $DB->insert_record('block_validador_results', $record);
                     } else {
-                        // Existe un resultado previo, verificar si cambió
-                        if ($existing->passed != $newpassed) {
+                        // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                        if ($existing->passed == 2) {
+                            // No hacer nada.
+                        } else if ($existing->passed != $newpassed) {
                             $existing->passed = $newpassed;
                             $existing->timemodified = time();
                             $DB->update_record('block_validador_results', $existing);
@@ -685,6 +720,7 @@ class block_validador extends block_base {
                     // Si no existe el registro, lo insertamos
                     // Si existe, solo actualizamos si hubo un cambio en passed
                     if (!$existing) {
+                        // Inserción normal.
                         $record = new stdClass();
                         $record->contextid = $contextid;
                         $record->validationname = $validation['id'];
@@ -694,8 +730,10 @@ class block_validador extends block_base {
                         $record->timemodified = time();
                         $DB->insert_record('block_validador_results', $record);
                     } else {
-                        // Existe un resultado previo, verificar si cambió
-                        if ($existing->passed != $newpassed) {
+                        // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                        if ($existing->passed == 2) {
+                            // No hacer nada.
+                        } else if ($existing->passed != $newpassed) {
                             $existing->passed = $newpassed;
                             $existing->timemodified = time();
                             $DB->update_record('block_validador_results', $existing);
@@ -719,6 +757,7 @@ class block_validador extends block_base {
                     // Si no existe el registro, lo insertamos
                     // Si existe, solo actualizamos si hubo un cambio en passed
                     if (!$existing) {
+                        // Inserción normal.
                         $record = new stdClass();
                         $record->contextid = $contextid;
                         $record->validationname = $validation['id'];
@@ -728,8 +767,10 @@ class block_validador extends block_base {
                         $record->timemodified = time();
                         $DB->insert_record('block_validador_results', $record);
                     } else {
-                        // Existe un resultado previo, verificar si cambió
-                        if ($existing->passed != $newpassed) {
+                        // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                        if ($existing->passed == 2) {
+                            // No hacer nada.
+                        } else if ($existing->passed != $newpassed) {
                             $existing->passed = $newpassed;
                             $existing->timemodified = time();
                             $DB->update_record('block_validador_results', $existing);

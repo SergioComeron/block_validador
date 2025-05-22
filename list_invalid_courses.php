@@ -25,6 +25,12 @@ $exportsummarycsv = optional_param('exportsummarycsv', 0, PARAM_BOOL);
 // Recuperar parámetro para filtrar por curso.
 $filtercourse = optional_param('filtercourse', 0, PARAM_INT);
 
+// Recuperar parámetro para eliminar registros de un curso.
+$deletecourse = optional_param('deletecourse', 0, PARAM_INT);
+
+// Recuperar parámetro para ignorar registros de un curso.
+$ignorecourse = optional_param('ignorecourse', 0, PARAM_INT);
+
 // Procesar limpieza completa si se solicita.
 $cleanall = optional_param('cleanall', 0, PARAM_BOOL);
 if ($cleanall && confirm_sesskey()) {
@@ -35,6 +41,18 @@ if ($cleanall && confirm_sesskey()) {
 // Procesar eliminación si se solicita.
 if ($resultid && $confirm && confirm_sesskey()) {
     $DB->delete_records('block_validador_results', ['id' => $resultid]);
+    redirect($PAGE->url, get_string('delete_success', 'block_validador'), 2);
+}
+
+if ($deletecourse && confirm_sesskey()) {
+    // Eliminar todos los registros del curso especificado.
+    $DB->delete_records('block_validador_results', ['courseid' => $deletecourse]);
+    redirect($PAGE->url, get_string('delete_success', 'block_validador'), 2);
+}
+
+if ($ignorecourse && confirm_sesskey()) {
+    // Actualizar todos los registros del curso especificado, asignando passed = 2.
+    $DB->set_field('block_validador_results', 'passed', 2, ['courseid' => $ignorecourse]);
     redirect($PAGE->url, get_string('delete_success', 'block_validador'), 2);
 }
 
@@ -66,21 +84,34 @@ if (!empty($filtercourse)) {
     $params['filtercourse'] = $filtercourse;
 }
 
-// Agregar filtro por fecha de inicio
-$where .= " AND c.startdate > 1738403639";
-
 // Consulta para agrupar por curso.
-$sql = "
-    SELECT
-        c.id AS courseid,
-        c.fullname AS coursename,
-        COUNT(v.id) AS errorcount
-    FROM {block_validador_results} v
-    JOIN {course} c ON v.courseid = c.id
-    WHERE v.passed = 0 AND c.startdate > 1738403639
-    GROUP BY c.id, c.fullname
-    ORDER BY errorcount DESC
-";
+if ($CFG->dbtype == 'pgsql') {
+    $sql = "
+        SELECT
+            c.id AS courseid,
+            c.fullname AS coursename,
+            string_agg(v.validationname, ', ') AS errors,
+            COUNT(v.id) AS errorcount
+        FROM {block_validador_results} v
+        JOIN {course} c ON v.courseid = c.id
+        WHERE v.passed = 0
+        GROUP BY c.id, c.fullname
+        ORDER BY errorcount DESC
+    ";
+} else {
+    $sql = "
+        SELECT
+            c.id AS courseid,
+            c.fullname AS coursename,
+            GROUP_CONCAT(v.validationname SEPARATOR ', ') AS errors,
+            COUNT(v.id) AS errorcount
+        FROM {block_validador_results} v
+        JOIN {course} c ON v.courseid = c.id
+        WHERE v.passed = 0
+        GROUP BY c.id, c.fullname
+        ORDER BY errorcount DESC
+    ";
+}
 $courses = $DB->get_records_sql($sql);
 
 // Exportar datos a CSV si se solicita.
@@ -199,8 +230,11 @@ echo html_writer::start_tag('table', ['class' => 'generaltable']);
 echo html_writer::start_tag('tr');
 echo html_writer::tag('th', get_string('course', 'block_validador'));
 echo html_writer::tag('th', get_string('invalidcount', 'block_validador'));
+echo html_writer::tag('th', 'Errores');
 echo html_writer::tag('th', get_string('editingteachers', 'block_validador'));
 echo html_writer::tag('th', get_string('details'));
+echo html_writer::tag('th', 'Borrar registros'); // Botón existente para eliminar registros
+echo html_writer::tag('th', 'Obviar');           // Nueva cabecera para obviar el curso
 echo html_writer::end_tag('tr');
 
 foreach ($courses as $course) {
@@ -225,14 +259,31 @@ foreach ($courses as $course) {
     }, $teachers);
     $teachers_str = implode(', ', $teacher_names);
 
-    // Enlace a detalle (puedes filtrar por courseid en la tabla detallada).
+    // Enlace a detalle.
     $detailurl = new moodle_url($PAGE->url, ['filtercourse' => $course->courseid]);
+
+    // Botón para borrar registros del curso.
+    $deleteurl = new moodle_url($PAGE->url, [
+        'deletecourse' => $course->courseid,
+        'sesskey' => sesskey()
+    ]);
+    $deletebutton = $OUTPUT->single_button($deleteurl, get_string('delete'), 'post');
+
+    // Botón para ignorar el curso (establece passed = 2).
+    $ignoreurl = new moodle_url($PAGE->url, [
+        'ignorecourse' => $course->courseid,
+        'sesskey' => sesskey()
+    ]);
+    $ignorebutton = $OUTPUT->single_button($ignoreurl, 'Obviar', 'post');
 
     echo html_writer::start_tag('tr');
     echo html_writer::tag('td', $course->coursename);
     echo html_writer::tag('td', $course->errorcount);
+    echo html_writer::tag('td', $course->errors);
     echo html_writer::tag('td', $teachers_str ?: get_string('noteachers', 'block_validador'));
     echo html_writer::tag('td', html_writer::link($detailurl, get_string('details')));
+    echo html_writer::tag('td', $deletebutton);
+    echo html_writer::tag('td', $ignorebutton);
     echo html_writer::end_tag('tr');
 }
 echo html_writer::end_tag('table');
