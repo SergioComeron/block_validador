@@ -134,6 +134,7 @@ if ($exportcsv) {
     // Encabezados del CSV.
     fputcsv($output, [
         get_string('course', 'block_validador'),
+        get_string('courselink', 'block_validador'), // Nueva columna para el enlace
         get_string('validation', 'block_validador'),
         get_string('activity', 'block_validador'),
         get_string('timecreated', 'block_validador'),
@@ -142,8 +143,10 @@ if ($exportcsv) {
 
     // Agregar filas de datos.
     foreach ($rs as $record) {
+        $courseurl = $CFG->wwwroot . '/course/view.php?id=' . $record->courseid;
         fputcsv($output, [
             $record->coursename,
+            $courseurl,
             $record->validationname,
             $record->activity,
             userdate($record->timecreated),
@@ -167,12 +170,15 @@ if ($exportsummarycsv) {
     // Encabezados del CSV.
     fputcsv($output, [
         get_string('course', 'block_validador'),
+        get_string('courselink', 'block_validador'), // Nueva columna para el enlace
         get_string('invalidcount', 'block_validador'),
         get_string('editingteachers', 'block_validador')
     ]);
 
     foreach ($courses as $course) {
-        // Obtener profesores.
+        $courseurl = $CFG->wwwroot . '/course/view.php?id=' . $course->courseid;
+
+        // Obtener profesores del curso.
         $sqlteachers = "
             SELECT u.firstname, u.lastname
             FROM {role_assignments} ra
@@ -195,6 +201,7 @@ if ($exportsummarycsv) {
 
         fputcsv($output, [
             $course->coursename,
+            $courseurl,
             $course->errorcount,
             $teachers_str ?: get_string('noteachers', 'block_validador')
         ]);
@@ -277,7 +284,8 @@ foreach ($courses as $course) {
     $ignorebutton = $OUTPUT->single_button($ignoreurl, 'Obviar', 'post');
 
     echo html_writer::start_tag('tr');
-    echo html_writer::tag('td', $course->coursename);
+    $courseurl = new moodle_url('/course/view.php', ['id' => $course->courseid]);
+    echo html_writer::tag('td', html_writer::link($courseurl, $course->coursename));
     echo html_writer::tag('td', $course->errorcount);
     echo html_writer::tag('td', $course->errors);
     echo html_writer::tag('td', $teachers_str ?: get_string('noteachers', 'block_validador'));

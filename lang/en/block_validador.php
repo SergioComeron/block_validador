@@ -69,3 +69,4 @@ $string['noteachers'] = 'There are no teachers in this course';
 $string['quizhaspledgeabove'] = 'Quiz has pledge above';
 $string['quizpledgeaccess'] = 'Quiz Pledge Restriction';
 $string['invalidcount'] = 'Invalid count';
+$string['courselink'] = 'Course link';
