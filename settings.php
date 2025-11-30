@@ -36,6 +36,14 @@ if ($ADMIN->fulltree) {
         $categories
     ));
 
+    // Configuración de fecha mínima de creación de grupos
+    $settings->add(new admin_setting_configdate(
+        'block_validador/min_group_timecreated',
+        get_string('min_group_timecreated', 'block_validador'),
+        get_string('min_group_timecreated_desc', 'block_validador'),
+        1738337214
+    ));
+
     // Añadir enlace a la página list_invalid_courses.php
     $settings->add(new admin_setting_heading(
         'block_validador/linktoinvalidcourses',

@@ -66,3 +66,5 @@ $string['totalinvalidations'] = 'Total de validaciones no válidas';
 $string['noteachers'] = 'No hay profesores en este curso';
 $string['quizhaspledgeabove'] = 'El cuestionario tiene código de honor arriba';
 $string['quizpledgeaccess'] = 'El cuestionario tiene restricción de código de honor';
+$string['min_group_timecreated'] = 'Fecha mínima de creación de grupos';
+$string['min_group_timecreated_desc'] = 'Fecha mínima para validar grupos. Los grupos creados antes de esta fecha no serán validados.';

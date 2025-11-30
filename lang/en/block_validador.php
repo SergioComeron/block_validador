@@ -68,5 +68,7 @@ $string['totalinvalidations'] = 'Total invalidations';
 $string['noteachers'] = 'There are no teachers in this course';
 $string['quizhaspledgeabove'] = 'Quiz has pledge above';
 $string['quizpledgeaccess'] = 'Quiz Pledge Restriction';
+$string['min_group_timecreated'] = 'Minimum group creation date';
+$string['min_group_timecreated_desc'] = 'Minimum date for validating groups. Groups created before this date will not be validated.';
 $string['invalidcount'] = 'Invalid count';
 $string['courselink'] = 'Course link';
