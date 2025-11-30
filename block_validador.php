@@ -1174,7 +1174,6 @@ class block_validador extends block_base {
         $valid_group_count = 0;
         $valid_groups = [];
         $groups = groups_get_all_groups($COURSE->id);
-
         foreach ($groups as $group) {
             if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes' && $group->timecreated > 1738337214) {
                 $valid_group_count++;
@@ -1489,7 +1488,7 @@ class block_validador extends block_base {
     private function has_group_restriction($availability, $groupid) {
         if (isset($availability->type) && $availability->type == 'group' && isset($availability->id) && $availability->id == $groupid) {
             return true;
-        } elseif (isset($availability->op) && isset($availability->c)) {
+        } else if (isset($availability->op) && isset($availability->c)) {
             foreach ($availability->c as $condition) {
                 if ($this->has_group_restriction($condition, $groupid)) {
                     return true;
