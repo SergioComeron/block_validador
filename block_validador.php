@@ -1100,9 +1100,7 @@ class block_validador extends block_base {
                     $keywords = [
                         'problemas técnicos',
                         'correo electrónico',
-                        'innovacion@udima.es',
-                        'examenes@udima.es',
-                        'académica'
+                        'soporte.alumno@udima.es',
                     ];
     
                     // Verificar si todas las palabras clave están presentes en el texto
