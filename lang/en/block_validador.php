@@ -72,3 +72,5 @@ $string['min_group_timecreated'] = 'Minimum group creation date';
 $string['min_group_timecreated_desc'] = 'Minimum date for validating groups. Groups created before this date will not be validated.';
 $string['invalidcount'] = 'Invalid count';
 $string['courselink'] = 'Course link';
+$string['pledgedates'] = 'Pledge dates (15 minutes before start and same end)';
+$string['gradebook_online_weight'] = 'The Online Exam category weight must be set to 0';

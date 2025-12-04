@@ -210,6 +210,43 @@ class block_validador extends block_base {
             $validations_passed = $validations_passed && $validation['passed'];
         }
 
+        // Nueva validación para el peso de Examen online
+        $validationsweightonline = $this->validate_examen_online_weight();
+        foreach ($validationsweightonline as $validation) {
+            $contextid = $validation['contextid'];
+            $params = ['contextid' => $contextid, 'validationname' => $validation['id']];
+            $existing = $DB->get_record('block_validador_results', $params);
+
+            $newpassed = $validation['passed'] ? 1 : 0;
+
+            // Si no existe el registro, lo insertamos
+            // Si existe, solo actualizamos si hubo un cambio en passed
+            if (!$existing) {
+                // Inserción normal.
+                $record = new stdClass();
+                $record->contextid = $contextid;
+                $record->validationname = $validation['id'];
+                $record->courseid = $COURSE->id; // Agregar el ID del curso
+                $record->passed = $newpassed;
+                $record->timecreated = time();
+                $record->timemodified = time();
+                $DB->insert_record('block_validador_results', $record);
+            } else {
+                // Si ya existe y tiene passed = 2, no se vuelve a validar.
+                if ($existing->passed == 2) {
+                    // No hacer nada.
+                } else if ($existing->passed != $newpassed) {
+                    $existing->passed = $newpassed;
+                    $existing->timemodified = time();
+                    $DB->update_record('block_validador_results', $existing);
+                }
+            }
+            $status = $validation['passed'] ? '🟢' : '🔴';
+            $color = $validation['passed'] ? 'black' : 'red';
+            $this->content->text .= "<span style='color: $color;'>$status{$validation['name']}</span><br>";
+            $validations_passed = $validations_passed && $validation['passed'];
+        }
+
         $this->content->text .= "<h4>Smowl</h4>";
 
         // Listado de validaciones
@@ -830,45 +867,61 @@ class block_validador extends block_base {
 
         $validations = [];
         $has_pledge_above = false;
+        $pledge_dates_valid = false;
 
         // Obtener el course module del cuestionario.
         $quizcm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
         if (!$quizcm) {
-            return false;
+            return $this->return_pledge_validations(false, false);
         }
 
         // Obtener la sección en la que se encuentra el cuestionario.
         $section = $DB->get_record('course_sections', ['id' => $quizcm->section, 'course' => $COURSE->id]);
         if (!$section || empty($section->sequence)) {
-            return false;
+            return $this->return_pledge_validations(false, false);
         }
 
         // Separar la secuencia de course modules y buscar la posición del cuestionario.
         $cmids = explode(',', $section->sequence);
         $currentIndex = array_search($quizcm->id, $cmids);
         if ($currentIndex === false || $currentIndex === 0) {
-            return false;
+            return $this->return_pledge_validations(false, false);
         }
 
         // Obtener el course module que está justo antes del cuestionario.
         $prevCmid = $cmids[$currentIndex - 1];
         $prevModule = get_coursemodule_from_id(null, $prevCmid, 0, false, IGNORE_MISSING);
         if (!$prevModule) {
-            return false;
+            return $this->return_pledge_validations(false, false);
         }
 
         if ($prevModule && $prevModule->modname === 'pledge') {
+            // Obtener el registro del pledge
+            $pledge = $DB->get_record('pledge', ['id' => $prevModule->instance]);
+            
             // Verificar que el pledge esté configurado para completarse al ser visto.
-            // Suponemos que esta configuración se almacena en el campo 'completionview'
-            // y que el valor 1 indica que se marca como completado al verse.
             if (isset($prevModule->completionview) && $prevModule->completionview == 1) {
-                // Además, verificar que el pledge tenga una restricción de grupo y que se pertenezca al grupo $group.
+                // Verificar que el pledge tenga una restricción de grupo y que se pertenezca al grupo $group.
                 if (!empty($prevModule->availability)) {
                     $availability = json_decode($prevModule->availability);
                     if (isset($availability->c) && is_array($availability->c)) {
                         foreach ($availability->c as $condition) {
                             if (isset($condition->type) && $condition->type == 'group' && isset($condition->id) && $condition->id == $group->id) {
                                 $has_pledge_above = true;
+                                
+                                // Validar fechas del pledge en relación con el cuestionario
+                                if ($pledge && $quiz->timeopen && $quiz->timeclose) {
+                                    // La fecha de inicio del pledge debe ser 15 minutos (900 segundos) antes del cuestionario
+                                    $expected_pledge_start = $quiz->timeopen - 900;
+                                    // La fecha de fin del pledge debe ser igual a la fecha de fin del cuestionario
+                                    $expected_pledge_end = $quiz->timeclose;
+                                    
+                                    // Validar que las fechas coincidan exactamente
+                                    if ($pledge->timeopen == $expected_pledge_start && 
+                                        $pledge->timeclosed == $expected_pledge_end) {
+                                        $pledge_dates_valid = true;
+                                    }
+                                }
                                 break;
                             }
                         }
@@ -877,13 +930,22 @@ class block_validador extends block_base {
             }
         }
 
-        $validations[] = [
-            'id' => 'quizhaspledgeabove',
-            'name' => get_string('quizhaspledgeabove', 'block_validador'),
-            'passed' => $has_pledge_above
-        ];
+        return $this->return_pledge_validations($has_pledge_above, $pledge_dates_valid);
+    }
 
-        return $validations;
+    private function return_pledge_validations($has_pledge_above, $pledge_dates_valid) {
+        return [
+            [
+                'id' => 'quizhaspledgeabove',
+                'name' => get_string('quizhaspledgeabove', 'block_validador'),
+                'passed' => $has_pledge_above
+            ],
+            [
+                'id' => 'pledgedates',
+                'name' => get_string('pledgedates', 'block_validador'),
+                'passed' => $pledge_dates_valid
+            ]
+        ];
     }
 
     private function validate_quiz_pledge_access($quiz) {
@@ -964,9 +1026,7 @@ class block_validador extends block_base {
                     $keywords = [
                         'problemas técnicos',
                         'correo electrónico',
-                        'innovacion@udima.es',
-                        'examenes@udima.es',
-                        'académica'
+                        'soporte.alumno@udima.es',
                     ];
     
                     // Verificar si todas las palabras clave están presentes en el texto
@@ -1165,7 +1225,10 @@ class block_validador extends block_base {
         ]);
 
         // Validar que el peso (aggregationcoef) es 0
-        if (!$category_grade_item || $category_grade_item->aggregationcoef2 != 0) {
+        if (
+            !$category_grade_item ||
+            (float)$category_grade_item->aggregationcoef !== 0.0
+        ) {
             $gradebook_valid = false;
         }
     }
@@ -1179,6 +1242,53 @@ class block_validador extends block_base {
 
     return $validationsgradebook;
 }
+
+    private function validate_examen_online_weight() {
+        global $COURSE, $DB;
+
+        $gradebook_valid = true;
+        $contextid = context_course::instance($COURSE->id)->id;
+
+        // Obtener la categoría "Examen online" (nombre insensible a mayúsculas/minúsculas)
+        $exam_online_category = $DB->get_record_sql(
+            "SELECT *
+             FROM {grade_categories}
+             WHERE courseid = :courseid
+               AND LOWER(TRIM(fullname)) = LOWER(:fullname)",
+            ['courseid' => $COURSE->id, 'fullname' => 'Examen online']
+        );
+
+        if (!$exam_online_category) {
+            $gradebook_valid = false;
+        } else {
+            // Buscar el ítem asociado a la categoría
+            $category_grade_item = $DB->get_record('grade_items', [
+                'itemtype' => 'category',
+                'iteminstance' => $exam_online_category->id,
+                'courseid' => $COURSE->id
+            ]);
+
+            if (!$category_grade_item) {
+                $gradebook_valid = false;
+            } else {
+                // Validar que el peso (aggregationcoef) sea 0 o 0.0
+                $weight = (float)$category_grade_item->aggregationcoef;
+                if ($weight !== 0.0) {
+                    $gradebook_valid = false;
+                }
+            }
+        }
+
+        $validations = [];
+        $validations[] = [
+            'id' => 'gradebook_online_weight',
+            'contextid' => $contextid,
+            'name' => get_string('gradebook_online_weight', 'block_validador'),
+            'passed' => $gradebook_valid
+        ];
+
+        return $validations;
+    }
 
     /* private function performs_validations_gradebook_subcategorie_examenpresencial() {
         global $COURSE, $DB, $CFG;
