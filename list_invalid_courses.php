@@ -180,7 +180,7 @@ if ($exportsummarycsv) {
 
         // Obtener profesores del curso.
         $sqlteachers = "
-            SELECT u.firstname, u.lastname
+            SELECT u.id, u.firstname, u.lastname
             FROM {role_assignments} ra
             JOIN {user} u ON ra.userid = u.id
             JOIN {context} ctx ON ra.contextid = ctx.id
@@ -249,7 +249,7 @@ echo html_writer::end_tag('tr');
 foreach ($courses as $course) {
     // Obtener profesores.
     $sqlteachers = "
-        SELECT u.firstname, u.lastname
+        SELECT u.id, u.firstname, u.lastname
         FROM {role_assignments} ra
         JOIN {user} u ON ra.userid = u.id
         JOIN {context} ctx ON ra.contextid = ctx.id
@@ -369,7 +369,7 @@ class invalid_courses_table extends table_sql {
         global $DB;
 
         $sql = "
-            SELECT u.firstname, u.lastname
+            SELECT u.id, u.firstname, u.lastname
             FROM {role_assignments} ra
             JOIN {user} u ON ra.userid = u.id
             JOIN {context} ctx ON ra.contextid = ctx.id
