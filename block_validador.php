@@ -55,6 +55,14 @@ class block_validador extends block_base {
             return $this->content;
         }
 
+        // No ejecutar validaciones ni mostrar el bloque si el curso está oculto
+        // Esto evita que se creen registros en block_validador_results para cursos ocultos
+        if ($COURSE->visible == 0) {
+            $this->content = new stdClass();
+            $this->content->text = '';
+            return $this->content;
+        }
+
         // Contenido del bloque
         $this->content = new stdClass();
         $this->content->text = '';

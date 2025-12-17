@@ -76,7 +76,7 @@ $from = "
     LEFT JOIN {modules} m ON cm.module = m.id
 ";
 
-$where = "v.passed = 0";
+$where = "v.passed = 0 AND c.visible = 1";
 $params = ['contextlevel' => CONTEXT_MODULE];
 
 if (!empty($filtercourse)) {
@@ -94,7 +94,7 @@ if ($CFG->dbtype == 'pgsql') {
             COUNT(v.id) AS errorcount
         FROM {block_validador_results} v
         JOIN {course} c ON v.courseid = c.id
-        WHERE v.passed = 0
+        WHERE v.passed = 0 AND c.visible = 1
         GROUP BY c.id, c.fullname
         ORDER BY errorcount DESC
     ";
@@ -107,7 +107,7 @@ if ($CFG->dbtype == 'pgsql') {
             COUNT(v.id) AS errorcount
         FROM {block_validador_results} v
         JOIN {course} c ON v.courseid = c.id
-        WHERE v.passed = 0
+        WHERE v.passed = 0 AND c.visible = 1
         GROUP BY c.id, c.fullname
         ORDER BY errorcount DESC
     ";
@@ -210,10 +210,12 @@ if ($exportsummarycsv) {
     exit;
 }
 
-// Obtener el número total de validaciones erróneas.
-$total_invalidations = $DB->count_records_select(
-    'block_validador_results',
-    'passed = 0'
+// Obtener el número total de validaciones erróneas (solo cursos visibles).
+$total_invalidations = $DB->count_records_sql(
+    "SELECT COUNT(v.id)
+     FROM {block_validador_results} v
+     JOIN {course} c ON v.courseid = c.id
+     WHERE v.passed = 0 AND c.visible = 1"
 );
 
 echo $OUTPUT->header();
