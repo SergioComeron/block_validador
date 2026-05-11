@@ -27,11 +27,8 @@
  $capabilities = [
     'block/validador:addinstance' => [
         'captype' => 'write',
-        'contextlevel' => CONTEXT_COURSE, // Solo en el contexto de un curso.
-        'archetypes' => [
-            'manager' => CAP_ALLOW,
-            'editingteacher' => CAP_ALLOW,
-        ],
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [],
     ],
     'block/validador:view' => array(
         'riskbitmask' => RISK_PERSONAL,

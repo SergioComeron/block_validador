@@ -8,6 +8,8 @@ require_login();
 $context = context_system::instance();
 require_capability('moodle/site:config', $context);
 
+$editingteacherroleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
+
 // URL de la página
 $PAGE->set_url('/blocks/validador/list_invalid_courses.php');
 $PAGE->set_context($context);
@@ -191,7 +193,7 @@ if ($exportsummarycsv) {
         $teacherparams = [
             'contextlevel' => CONTEXT_COURSE,
             'courseid' => $course->courseid,
-            'roleid' => 3 // editingteacher
+            'roleid' => $editingteacherroleid
         ];
         $teachers = $DB->get_records_sql($sqlteachers, $teacherparams);
         $teacher_names = array_map(function($t) {
@@ -260,7 +262,7 @@ foreach ($courses as $course) {
     $teacherparams = [
         'contextlevel' => CONTEXT_COURSE,
         'courseid' => $course->courseid,
-        'roleid' => 3 // editingteacher
+        'roleid' => $editingteacherroleid,
     ];
     $teachers = $DB->get_records_sql($sqlteachers, $teacherparams);
     $teacher_names = array_map(function($t) {
@@ -380,7 +382,7 @@ class invalid_courses_table extends table_sql {
         $params = [
             'contextlevel' => CONTEXT_COURSE,
             'courseid' => $values->courseid,
-            'roleid' => 3 // ID por defecto del rol editingteacher
+            'roleid' => $DB->get_field('role', 'id', ['shortname' => 'editingteacher']),
         ];
         $teachers = $DB->get_records_sql($sql, $params);
 
