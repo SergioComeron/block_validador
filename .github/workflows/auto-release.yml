@@ -8,6 +8,7 @@ on:
 
 jobs:
   auto-release:
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.head_commit.message, 'chore: bump version')"
     name: Tag, update changelog and build release
     runs-on: ubuntu-latest
     permissions:
