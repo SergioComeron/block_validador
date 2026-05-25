@@ -22,9 +22,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 namespace block_validador;
+
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Admin setting for a date/time picker configuration field.
