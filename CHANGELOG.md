@@ -5,6 +5,10 @@
 - Corrige errores de codestyle, añade tests PHPUnit y hook pre-push
 - Añade workflow de auto-bump de versión en cada push a main
 - Añade CI/CD: auto-release, release y CI con syntax check y codestyle
+
+## [v1.1.1] - 2026-05-25
+
+
 - Nuevas validaciones, paginación y filtros en listado de cursos inválidos
 - Refactoring, corrección de bugs y mejoras de validación
 - resuelve errores cuando el nombre del profesor se repetia
