@@ -19,6 +19,7 @@ namespace block_validador;
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
+require_once($CFG->dirroot . '/blocks/moodleblock.class.php');
 require_once($CFG->dirroot . '/blocks/validador/block_validador.php');
 
 /**
