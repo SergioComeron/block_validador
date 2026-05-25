@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * 
+ *
  * Settings for validador block
  * @package   block_validador
  * @copyright  2024 Sergio Comerón (info@sergiocomeron.com)

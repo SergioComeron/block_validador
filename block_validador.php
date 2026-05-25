@@ -22,13 +22,24 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once($CFG->libdir . '/gradelib.php');
 
+/**
+ * Block that validates course configuration before an online exam.
+ */
 class block_validador extends block_base {
+    /**
+     * Initialises the block.
+     */
     public function init() {
         $this->title = get_string('pluginname', 'block_validador');
     }
 
+    /**
+     * Returns the block content.
+     */
     public function get_content() {
         global $COURSE, $DB, $CFG;
 
@@ -41,7 +52,6 @@ class block_validador extends block_base {
             $this->content->text = '';
             return $this->content;
         }
-
 
         if ($COURSE->visible == 0) {
             $this->content = new stdClass();
@@ -64,53 +74,53 @@ class block_validador extends block_base {
 
         $this->content = new stdClass();
         $this->content->text = '';
-        $validations_passed = true;
+        $validationspassed = true;
 
         $this->content->text .= "<h4>Grupos</h4>";
         $validationsgroups = $this->perform_validations_groups();
         foreach ($validationsgroups as $validation) {
             $this->content->text .= $this->save_and_render_validation($validation, $validation['contextid']);
-            $validations_passed = $validations_passed && $validation['passed'];
+            $validationspassed = $validationspassed && $validation['passed'];
         }
 
-        $groups_passed = !empty(array_filter($validationsgroups, fn($v) => $v['id'] === 'groups' && $v['passed']));
-        if ($groups_passed) {
+        $groupspassed = !empty(array_filter($validationsgroups, fn($v) => $v['id'] === 'groups' && $v['passed']));
+        if ($groupspassed) {
             foreach ($this->perform_validations_groupwithquizzes() as $validation) {
                 $this->content->text .= $this->save_and_render_validation($validation, $validation['contextid']);
-                $validations_passed = $validations_passed && $validation['passed'];
+                $validationspassed = $validationspassed && $validation['passed'];
             }
         }
 
         $this->content->text .= "<h4>Libro de Calificaciones</h4>";
         foreach ($this->performs_validations_gradebook_final() as $validation) {
             $this->content->text .= $this->save_and_render_validation($validation, $validation['contextid']);
-            $validations_passed = $validations_passed && $validation['passed'];
+            $validationspassed = $validationspassed && $validation['passed'];
         }
         foreach ($this->performs_validations_gradebook_online() as $validation) {
             $this->content->text .= $this->save_and_render_validation($validation, $validation['contextid']);
-            $validations_passed = $validations_passed && $validation['passed'];
+            $validationspassed = $validationspassed && $validation['passed'];
         }
         foreach ($this->validate_examen_online_weight() as $validation) {
             $this->content->text .= $this->save_and_render_validation($validation, $validation['contextid']);
-            $validations_passed = $validations_passed && $validation['passed'];
+            $validationspassed = $validationspassed && $validation['passed'];
         }
 
         $this->content->text .= "<h4>Smowl</h4>";
         foreach ($this->perform_validations_smowl() as $validation) {
             $this->content->text .= $this->save_and_render_validation($validation, $validation['contextid']);
-            $validations_passed = $validations_passed && $validation['passed'];
+            $validationspassed = $validationspassed && $validation['passed'];
         }
 
-        $groups_passed = !empty(array_filter($validationsgroups, fn($v) => $v['id'] === 'groups' && $v['passed']));
-        if ($groups_passed) {
+        $groupspassed = !empty(array_filter($validationsgroups, fn($v) => $v['id'] === 'groups' && $v['passed']));
+        if ($groupspassed) {
             $this->content->text .= "<h4>Cuestionarios</h4>";
-            $valid_groups = [];
+            $validgroups = [];
             foreach (groups_get_all_groups($COURSE->id) as $group) {
                 if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes') {
-                    $valid_groups[] = $group;
+                    $validgroups[] = $group;
                 }
             }
-            foreach ($valid_groups as $group) {
+            foreach ($validgroups as $group) {
                 $groupquizzes = $DB->get_records_sql(
                     'SELECT * FROM {quiz} WHERE course = ? AND name LIKE ? ORDER BY id ASC',
                     [$COURSE->id, $group->name . '%']
@@ -130,37 +140,37 @@ class block_validador extends block_base {
                     'passed' => count($groupquizzes) === 1,
                 ];
                 $this->content->text .= $this->save_and_render_validation($multipleval, $contextid);
-                $validations_passed = $validations_passed && $multipleval['passed'];
+                $validationspassed = $validationspassed && $multipleval['passed'];
                 if (!$multipleval['passed']) {
                     continue;
                 }
 
                 $datesvalidation = $this->validate_quiz_has_dates($quiz)[0];
                 $this->content->text .= $this->save_and_render_validation($datesvalidation, $contextid);
-                $validations_passed = $validations_passed && $datesvalidation['passed'];
+                $validationspassed = $validationspassed && $datesvalidation['passed'];
                 if (!$datesvalidation['passed']) {
                     continue;
                 }
 
                 foreach ($this->validate_quiz_pledge_access($quiz) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid);
-                    $validations_passed = $validations_passed && $validation['passed'];
+                    $validationspassed = $validationspassed && $validation['passed'];
                 }
                 foreach ($this->timelimitvalidation($quiz) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid, 'El tiempo deben ser 90 minutos');
-                    $validations_passed = $validations_passed && $validation['passed'];
+                    $validationspassed = $validationspassed && $validation['passed'];
                 }
                 foreach ($this->questionperpagevalidation($quiz) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid, 'Todas las preguntas en una única página');
-                    $validations_passed = $validations_passed && $validation['passed'];
+                    $validationspassed = $validationspassed && $validation['passed'];
                 }
                 foreach ($this->grouprestictionvalidation($quiz, $group) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid, 'El cuestionario tiene restricción por grupo');
-                    $validations_passed = $validations_passed && $validation['passed'];
+                    $validationspassed = $validationspassed && $validation['passed'];
                 }
                 foreach ($this->labelvalidation($quiz) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid);
-                    $validations_passed = $validations_passed && $validation['passed'];
+                    $validationspassed = $validationspassed && $validation['passed'];
                 }
 
                 $validationspledge = $this->check_quiz_has_pledge_above($quiz, $group);
@@ -173,36 +183,39 @@ class block_validador extends block_base {
                 }
                 foreach ($validationspledge as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid);
-                    $validations_passed = $validations_passed && $validation['passed'];
+                    $validationspassed = $validationspassed && $validation['passed'];
                 }
 
                 foreach ($this->gradetopass($quiz) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid);
-                    $validations_passed = $validations_passed && $validation['passed'];
+                    $validationspassed = $validationspassed && $validation['passed'];
                 }
                 foreach ($this->validate_quiz_grade_category($quiz) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid);
-                    $validations_passed = $validations_passed && $validation['passed'];
+                    $validationspassed = $validationspassed && $validation['passed'];
                 }
                 foreach ($this->validate_quiz_auto_submit($quiz) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid);
-                    $validations_passed = $validations_passed && $validation['passed'];
+                    $validationspassed = $validationspassed && $validation['passed'];
                 }
                 foreach ($this->validate_quiz_review_options($quiz) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid);
-                    $validations_passed = $validations_passed && $validation['passed'];
+                    $validationspassed = $validationspassed && $validation['passed'];
                 }
             }
         }
 
-        $emoji = $validations_passed ? '✅' : '❌';
-        $message = $validations_passed ? 'Curso Validado' : 'Curso No Validado';
+        $emoji = $validationspassed ? '✅' : '❌';
+        $message = $validationspassed ? 'Curso Validado' : 'Curso No Validado';
         $message = "<span style='font-size: 2em;'>$message</span>";
         $this->content->text = "$emoji $message<br>" . $this->content->text;
 
         return $this->content;
     }
 
+    /**
+     * Persists a validation result and returns its HTML rendering.
+     */
     private function save_and_render_validation(array $validation, int $contextid, string $title = ''): string {
         global $DB, $COURSE;
 
@@ -232,70 +245,84 @@ class block_validador extends block_base {
         return "<span style='color: $color;'$titleattr>$status {$validation['name']}</span><br>";
     }
 
+    /**
+     * Validates quiz review options configuration.
+     */
     private function validate_quiz_review_options($quiz) {
         $validations = [];
-        $review_options_valid = true;
-    
+        $reviewoptionsvalid = true;
+
         // Obtener las opciones de revisión del cuestionario
-        $review_options_during = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::DURING);
-        $review_options_immediately = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::IMMEDIATELY_AFTER);
-        $review_options_open = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::LATER_WHILE_OPEN);
-        $review_options_closed = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::AFTER_CLOSE);
+        $reviewoptionsduring = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::DURING);
+        $reviewoptionsimmediately = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::IMMEDIATELY_AFTER);
+        $reviewoptionsopen = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::LATER_WHILE_OPEN);
+        $reviewoptionsclosed = \mod_quiz\question\display_options::make_from_quiz($quiz, \mod_quiz\question\display_options::AFTER_CLOSE);
 
         // Verificar que solo la opción de ver el intento esté activada durante el intento
-        if ($review_options_during->attempt != \mod_quiz\question\display_options::VISIBLE ||
-            $review_options_during->correctness != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_during->marks != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_during->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_during->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_during->overallfeedback != \mod_quiz\question\display_options::HIDDEN) {
-            $review_options_valid = false;
+        if (
+            $reviewoptionsduring->attempt != \mod_quiz\question\display_options::VISIBLE ||
+            $reviewoptionsduring->correctness != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsduring->marks != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsduring->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsduring->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsduring->overallfeedback != \mod_quiz\question\display_options::HIDDEN
+        ) {
+            $reviewoptionsvalid = false;
         }
 
         // Verificar las opciones de revisión inmediatamente después del intento
-        if ($review_options_immediately->attempt != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_immediately->correctness != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_immediately->marks != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_immediately->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_immediately->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_immediately->overallfeedback != \mod_quiz\question\display_options::HIDDEN) {
-            $review_options_valid = false;
+        if (
+            $reviewoptionsimmediately->attempt != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsimmediately->correctness != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsimmediately->marks != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsimmediately->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsimmediately->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsimmediately->overallfeedback != \mod_quiz\question\display_options::HIDDEN
+        ) {
+            $reviewoptionsvalid = false;
         }
 
         // Verificar las opciones de revisión mientras el cuestionario está abierto
-        if ($review_options_open->attempt != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_open->correctness != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_open->marks != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_open->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_open->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_open->overallfeedback != \mod_quiz\question\display_options::HIDDEN) {
-            $review_options_valid = false;
+        if (
+            $reviewoptionsopen->attempt != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsopen->correctness != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsopen->marks != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsopen->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsopen->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsopen->overallfeedback != \mod_quiz\question\display_options::HIDDEN
+        ) {
+            $reviewoptionsvalid = false;
         }
 
         // Verificar las opciones de revisión después de cerrar el cuestionario
-        if ($review_options_closed->attempt != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_closed->correctness != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_closed->marks != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_closed->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_closed->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
-            $review_options_closed->overallfeedback != \mod_quiz\question\display_options::HIDDEN) {
-            $review_options_valid = false;
+        if (
+            $reviewoptionsclosed->attempt != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsclosed->correctness != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsclosed->marks != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsclosed->generalfeedback != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsclosed->rightanswer != \mod_quiz\question\display_options::HIDDEN ||
+            $reviewoptionsclosed->overallfeedback != \mod_quiz\question\display_options::HIDDEN
+        ) {
+            $reviewoptionsvalid = false;
         }
-    
+
         $validations[] = [
             'id' => 'quizreviewoptions',
             'name' => get_string('quizreviewoptions', 'block_validador'),
-            'passed' => $review_options_valid
+            'passed' => $reviewoptionsvalid,
         ];
-    
+
         return $validations;
     }
 
+    /**
+     * Validates that a SMOWL block exists in the course.
+     */
     private function perform_validations_smowl() {
         global $COURSE, $DB;
 
         $validations = [];
-        $smowl_block_exists = false;
+        $smowlblockexists = false;
 
         // Obtener todos los bloques del curso
         $blocks = $DB->get_records('block_instances', ['parentcontextid' => context_course::instance($COURSE->id)->id]);
@@ -303,7 +330,7 @@ class block_validador extends block_base {
         // Verificar si existe un bloque Smowl en el curso
         foreach ($blocks as $block) {
             if ($block->blockname == 'smowl') {
-                $smowl_block_exists = true;
+                $smowlblockexists = true;
                 break;
             }
         }
@@ -312,95 +339,107 @@ class block_validador extends block_base {
             'id' => 'smowl',
             'contextid' => context_course::instance($COURSE->id)->id,
             'name' => get_string('smowl', 'block_validador'),
-            'passed' => $smowl_block_exists
+            'passed' => $smowlblockexists,
         ];
 
         return $validations;
     }
 
+    /**
+     * Validates that the quiz is set to auto-submit on timeout.
+     */
     private function validate_quiz_auto_submit($quiz) {
         $validations = [];
-        $auto_submit = false;
+        $autosubmit = false;
 
         // Validación: verificar que el cuestionario esté configurado para enviar automáticamente al finalizar el tiempo
         if ($quiz->overduehandling == 'autosubmit') {
-            $auto_submit = true;
+            $autosubmit = true;
         }
 
         $validations[] = [
             'id' => 'quizautosubmit',
             'name' => get_string('quizautosubmit', 'block_validador'),
-            'passed' => $auto_submit
+            'passed' => $autosubmit,
         ];
 
         return $validations;
     }
 
+    /**
+     * Validates the quiz grade category name.
+     */
     private function validate_quiz_grade_category($quiz) {
         global $DB;
-    
+
         $validations = [];
-        $category_valid = false;
-    
+        $categoryvalid = false;
+
         // Obtener la categoría de calificación del cuestionario
-        $grade_item = $DB->get_record('grade_items', [
+        $gradeitem = $DB->get_record('grade_items', [
             'iteminstance' => $quiz->id,
-            'itemmodule' => 'quiz'
+            'itemmodule' => 'quiz',
         ]);
-    
-        if ($grade_item) {
+
+        if ($gradeitem) {
             // Obtener la categoría de calificación asociada al cuestionario
-            $category = $DB->get_record('grade_categories', ['id' => $grade_item->categoryid]);
-    
+            $category = $DB->get_record('grade_categories', ['id' => $gradeitem->categoryid]);
+
             // Validar insensibilidad a mayúsculas/minúsculas en el nombre de la categoría
             if ($category && (strcasecmp(trim($category->fullname), 'Examen online') === 0 || strcasecmp(trim($category->fullname), 'Examen final online') === 0)) {
-                $category_valid = true;
+                $categoryvalid = true;
             }
         }
-    
+
         $validations[] = [
             'id' => 'quizgradecategory',
             'name' => get_string('quizgradecategory', 'block_validador'),
-            'passed' => $category_valid
+            'passed' => $categoryvalid,
         ];
-    
+
         return $validations;
     }
 
+    /**
+     * Validates the quiz grade to pass value.
+     */
     private function gradetopass($quiz) {
         global $DB;
-    
+
         $validations = [];
-    
+
         // Obtener la nota de aprobado desde la tabla grade_items.
         $gradeitem = $DB->get_record('grade_items', [
             'iteminstance' => $quiz->id,
-            'itemmodule' => 'quiz'
+            'itemmodule' => 'quiz',
         ]);
-    
+
         if ($gradeitem && $gradeitem->gradepass == 5) {
             $validations[] = [
                 'id' => 'gradetopass',
                 'name' => get_string('gradetopass', 'block_validador'),
-                'passed' => true
+                'passed' => true,
             ];
         } else {
             $validations[] = [
                 'id' => 'gradetopass',
                 'name' => get_string('gradetopass', 'block_validador'),
-                'passed' => false
+                'passed' => false,
             ];
         }
-    
+
         return $validations;
     }
 
+    /**
+     * Checks that a pledge activity exists just above the quiz.
+     */
     private function check_quiz_has_pledge_above($quiz, $group) {
         global $COURSE, $DB;
 
         $validations = [];
-        $has_pledge_above = false;
-        $pledge_dates_valid = false;
+        $haspledgeabove = false;
+        $pledgedatesvalid = false;
 
         // Obtener el course module del cuestionario.
         $quizcm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
@@ -416,42 +455,44 @@ class block_validador extends block_base {
 
         // Separar la secuencia de course modules y buscar la posición del cuestionario.
         $cmids = explode(',', $section->sequence);
-        $currentIndex = array_search($quizcm->id, $cmids);
-        if ($currentIndex === false || $currentIndex === 0) {
+        $currentindex = array_search($quizcm->id, $cmids);
+        if ($currentindex === false || $currentindex === 0) {
             return $this->return_pledge_validations(false, false);
         }
 
         // Obtener el course module que está justo antes del cuestionario.
-        $prevCmid = $cmids[$currentIndex - 1];
-        $prevModule = get_coursemodule_from_id(null, $prevCmid, 0, false, IGNORE_MISSING);
-        if (!$prevModule) {
+        $prevcmid = $cmids[$currentindex - 1];
+        $prevmodule = get_coursemodule_from_id(null, $prevcmid, 0, false, IGNORE_MISSING);
+        if (!$prevmodule) {
             return $this->return_pledge_validations(false, false);
         }
 
-        if ($prevModule && $prevModule->modname === 'pledge') {
+        if ($prevmodule && $prevmodule->modname === 'pledge') {
             // Obtener el registro del pledge
-            $pledge = $DB->get_record('pledge', ['id' => $prevModule->instance]);
-            
+            $pledge = $DB->get_record('pledge', ['id' => $prevmodule->instance]);
+
             // Verificar que el pledge esté configurado para completarse al ser visto.
-            if (isset($prevModule->completionview) && $prevModule->completionview == 1) {
+            if (isset($prevmodule->completionview) && $prevmodule->completionview == 1) {
                 // Verificar que el pledge tenga una restricción de grupo y que se pertenezca al grupo $group.
-                if (!empty($prevModule->availability)) {
-                    $availability = json_decode($prevModule->availability);
+                if (!empty($prevmodule->availability)) {
+                    $availability = json_decode($prevmodule->availability);
                     if (isset($availability->c) && is_array($availability->c)) {
                         foreach ($availability->c as $condition) {
                             if (isset($condition->type) && $condition->type == 'group' && isset($condition->id) && $condition->id == $group->id) {
-                                $has_pledge_above = true;
-                                
+                                $haspledgeabove = true;
+
                                 // Validar fechas del pledge en relación con el cuestionario
                                 if ($pledge && $quiz->timeopen && $quiz->timeclose) {
                                     // El pledge abre 15 min antes que el cuestionario
-                                    $expected_pledge_start = $quiz->timeopen - 900;
+                                    $expectedpledgestart = $quiz->timeopen - 900;
                                     // El pledge cierra 5 min antes que el cuestionario
-                                    $expected_pledge_end = $quiz->timeclose - 300;
+                                    $expectedpledgeend = $quiz->timeclose - 300;
 
-                                    if ($pledge->timeopen == $expected_pledge_start &&
-                                        $pledge->timeclosed == $expected_pledge_end) {
-                                        $pledge_dates_valid = true;
+                                    if (
+                                        $pledge->timeopen == $expectedpledgestart &&
+                                        $pledge->timeclosed == $expectedpledgeend
+                                    ) {
+                                        $pledgedatesvalid = true;
                                     }
                                 }
                                 break;
@@ -462,89 +503,101 @@ class block_validador extends block_base {
             }
         }
 
-        return $this->return_pledge_validations($has_pledge_above, $pledge_dates_valid);
+        return $this->return_pledge_validations($haspledgeabove, $pledgedatesvalid);
     }
 
-    private function return_pledge_validations($has_pledge_above, $pledge_dates_valid) {
+    /**
+     * Returns pledge validation results array.
+     */
+    private function return_pledge_validations($haspledgeabove, $pledgedatesvalid) {
         return [
             [
                 'id' => 'quizhaspledgeabove',
                 'name' => get_string('quizhaspledgeabove', 'block_validador'),
-                'passed' => $has_pledge_above
+                'passed' => $haspledgeabove,
             ],
             [
                 'id' => 'pledgedates',
                 'name' => get_string('pledgedates', 'block_validador'),
-                'passed' => $pledge_dates_valid
-            ]
+                'passed' => $pledgedatesvalid,
+            ],
         ];
     }
 
+    /**
+     * Validates that the quiz has a pledge completion restriction.
+     */
     private function validate_quiz_pledge_access($quiz) {
         global $COURSE;
-    
+
         // Obtener el course module del cuestionario.
         $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
-        $pledgeRestrictionValid = false;
-    
+        $pledgerestrictionvalid = false;
+
         // Verificar que el cuestionario tenga restricciones de acceso configuradas.
         if ($cm && !empty($cm->availability)) {
             $availability = json_decode($cm->availability);
 
             // Buscar recursivamente una condición de tipo 'completion' marcada como completada.
-            $pledgeRestrictionValid = $this->check_completion_condition($availability);
+            $pledgerestrictionvalid = $this->check_completion_condition($availability);
         }
-    
+
         return [
             [
                 'id'      => 'quizpledgeaccess',
                 'name'    => get_string('quizpledgeaccess', 'block_validador'),
-                'passed'  => $pledgeRestrictionValid
-            ]
+                'passed'  => $pledgerestrictionvalid,
+            ],
         ];
     }
 
+    /**
+     * Recursively checks availability tree for a pledge completion condition.
+     */
     private function check_completion_condition($availability) {
             global $DB;
             // Si la condición es de tipo "completion"
-            if (isset($availability->type) && $availability->type === 'completion') {
-                if (isset($availability->cm)) {
-                    $cmid = $availability->cm;
-                    $pledgecm = get_coursemodule_from_id('pledge', $cmid, 0, false);
-                    if ($pledgecm) {
-                        $pledge = $DB->get_record('pledge', ['id' => $pledgecm->instance]);
-                        if ($pledge && preg_match('/\#\d{6}\#/', $pledge->name)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            // Recorrer recursivamente las condiciones hijas
-            if (isset($availability->c) && is_array($availability->c)) {
-                foreach ($availability->c as $condition) {
-                    if ($this->check_completion_condition($condition)) {
+        if (isset($availability->type) && $availability->type === 'completion') {
+            if (isset($availability->cm)) {
+                $cmid = $availability->cm;
+                $pledgecm = get_coursemodule_from_id('pledge', $cmid, 0, false);
+                if ($pledgecm) {
+                    $pledge = $DB->get_record('pledge', ['id' => $pledgecm->instance]);
+                    if ($pledge && preg_match('/\#\d{6}\#/', $pledge->name)) {
                         return true;
                     }
                 }
             }
-            return false;
         }
-    
+            // Recorrer recursivamente las condiciones hijas
+        if (isset($availability->c) && is_array($availability->c)) {
+            foreach ($availability->c as $condition) {
+                if ($this->check_completion_condition($condition)) {
+                    return true;
+                }
+            }
+        }
+            return false;
+    }
 
-    
 
+
+
+    /**
+     * Validates that a support label exists in the same section as the quiz.
+     */
     private function labelvalidation($quiz) {
         global $COURSE, $DB;
-    
+
         $validations = [];
-        $labels_valid = false;
-    
+        $labelsvalid = false;
+
         // Validación: verificar que cada cuestionario tenga un área de texto y medios en la misma semana
         $cm = get_coursemodule_from_instance('quiz', $quiz->id, $COURSE->id);
         $sectionquiz = $DB->get_record_sql('SELECT section FROM {course_modules} WHERE id = ?', [$cm->id]);
         $section = $DB->get_record('course_sections', ['id' => $sectionquiz->section]);
         $sequence = explode(',', $section->sequence);
-    
+
         foreach ($sequence as $cmid) {
             $cm = get_coursemodule_from_id(null, $cmid);
             if ($cm && $cm->modname == 'label') {
@@ -552,7 +605,7 @@ class block_validador extends block_base {
 
                 if ($label) {
                     // Eliminar etiquetas HTML del texto del label.
-                    $intro_text = strip_tags($label->intro);
+                    $introtext = strip_tags($label->intro);
 
                     // Palabras clave esperadas en el texto del label
                     $keywords = [
@@ -560,32 +613,35 @@ class block_validador extends block_base {
                         'correo electrónico',
                         'soporte.alumno@udima.es',
                     ];
-    
+
                     // Verificar si todas las palabras clave están presentes en el texto
-                    $all_keywords_found = true;
+                    $allkeywordsfound = true;
                     foreach ($keywords as $keyword) {
-                        if (stripos($intro_text, $keyword) === false) {
-                            $all_keywords_found = false;
+                        if (stripos($introtext, $keyword) === false) {
+                            $allkeywordsfound = false;
                             break;
                         }
                     }
 
-                    if ($all_keywords_found) {
-                        $labels_valid = true;
+                    if ($allkeywordsfound) {
+                        $labelsvalid = true;
                         break; // No es necesario seguir buscando
                     }
                 }
             }
         }
-    
+
         $validations[] = [
             'id' => 'label',
             'name' => get_string('label', 'block_validador'),
-            'passed' => $labels_valid
+            'passed' => $labelsvalid,
         ];
         return $validations;
     }
 
+    /**
+     * Validates that all questions are on a single page.
+     */
     private function questionperpagevalidation($quiz) {
         $validations = [];
         // Validación: verificar que todas las preguntas estén en una misma página
@@ -593,18 +649,21 @@ class block_validador extends block_base {
             $validations[] = [
                 'id' => 'quizquestionsperpage',
                 'name' => get_string('quizquestionsperpage', 'block_validador'),
-                'passed' => false
+                'passed' => false,
             ];
         } else {
             $validations[] = [
                 'id' => 'quizquestionsperpage',
                 'name' => get_string('quizquestionsperpage', 'block_validador'),
-                'passed' => true
+                'passed' => true,
             ];
         }
         return $validations;
     }
 
+    /**
+     * Validates that the quiz has open and close dates configured.
+     */
     private function validate_quiz_has_dates($quiz): array {
         $passed = !empty($quiz->timeopen) && !empty($quiz->timeclose);
         return [[
@@ -614,106 +673,118 @@ class block_validador extends block_base {
         ]];
     }
 
+    /**
+     * Validates the quiz time limit is 90 or 45 minutes.
+     */
     private function timelimitvalidation($quiz) {
         $validations = [];
         if ($quiz->timelimit == 5400 || $quiz->timelimit == 2700) { // 5400 segundos = 90 minutos, 2700 segundos = 45 minutos
             $validations[] = [
                 'id' => 'quiztimelimit',
                 'name' => get_string('quiztimelimit', 'block_validador'),
-                'passed' => true
+                'passed' => true,
             ];
         } else {
             $validations[] = [
                 'id' => 'quiztimelimit',
                 'name' => get_string('quiztimelimit', 'block_validador'),
-                'passed' => false
+                'passed' => false,
             ];
         }
-        
+
         return $validations;
     }
 
+    /**
+     * Validates that each valid group has a corresponding quiz.
+     */
     private function perform_validations_groupwithquizzes() {
         global $COURSE, $DB;
         // Validación: verificar que cada grupo válido tenga un cuestionario correspondiente
-        $valid_group_count = 0;
-        $valid_groups = [];
+        $validgroupcount = 0;
+        $validgroups = [];
         $groups = groups_get_all_groups($COURSE->id);
-        $min_timecreated = get_config('block_validador', 'min_group_timecreated');
+        $mintimecreated = get_config('block_validador', 'min_group_timecreated');
         foreach ($groups as $group) {
-            if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes' && $group->timecreated > $min_timecreated) {
-                $valid_group_count++;
-                $valid_groups[] = $group;
+            if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes' && $group->timecreated > $mintimecreated) {
+                $validgroupcount++;
+                $validgroups[] = $group;
             }
         }
 
-        $quizzes_valid = true;
-        $has_quizzes = false;
+        $quizzesvalid = true;
+        $hasquizzes = false;
 
         // Vamos a validar todos los cuestionarios.
-        foreach ($valid_groups as $group) {
+        foreach ($validgroups as $group) {
             // Buscar el cuestionario cuyo nombre es igual al nombre del grupo
             $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
             if ($quiz) {
-                $has_quizzes = true;
+                $hasquizzes = true;
                 // $this->validate_quiz($quiz, $group);
             } else {
                 // No se encontró un cuestionario con el nombre del grupo
-                $quizzes_valid = false;
+                $quizzesvalid = false;
                 break;
             }
         }
 
         // Si no hay cuestionarios, no se puede dar por válido
-        if (!$has_quizzes) {
-            $quizzes_valid = false;
+        if (!$hasquizzes) {
+            $quizzesvalid = false;
         }
 
         $validations[] = [
             'id' => 'groupwithquizzes',
             'contextid' => context_course::instance($COURSE->id)->id,
             'name' => get_string('groupwithquizzes', 'block_validador'),
-            'passed' => $quizzes_valid
+            'passed' => $quizzesvalid,
         ];
 
         return $validations;
     }
 
+    /**
+     * Validates that valid exam groups exist in the course.
+     */
     private function perform_validations_groups() {
         global $COURSE, $DB, $CFG;
 
         $validations = [];
 
         $groups = groups_get_all_groups($COURSE->id);
-        $min_timecreated = get_config('block_validador', 'min_group_timecreated');
+        $mintimecreated = get_config('block_validador', 'min_group_timecreated');
 
         // Validación: verificar que haya al menos dos grupos con nombres válidos
-        $valid_group_count = 0;
-        $valid_groups = [];
+        $validgroupcount = 0;
+        $validgroups = [];
         foreach ($groups as $group) {
-            if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes' && $group->timecreated > $min_timecreated) {
-                $valid_group_count++;
-                $valid_groups[] = $group;
+            if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes' && $group->timecreated > $mintimecreated) {
+                $validgroupcount++;
+                $validgroups[] = $group;
             }
         }
-        $valid_group_names = $valid_group_count >= 1;
+        $validgroupnames = $validgroupcount >= 1;
         $validations[] = [
             'id' => 'groups',
             'contextid' => context_course::instance($COURSE->id)->id,
             'name' => get_string('groups', 'block_validador'),
-            'passed' => $valid_group_names
+            'passed' => $validgroupnames,
         ];
 
         return $validations;
     }
 
+    /**
+     * Validates that the Examen final gradebook category is visible.
+     */
     private function performs_validations_gradebook_final() {
         global $COURSE, $DB, $CFG;
 
-        $gradebook_valid = true;
+        $gradebookvalid = true;
         $reason = '';
 
-        $exam_final_category = $DB->get_record_sql(
+        $examfinalcategory = $DB->get_record_sql(
             "SELECT *
              FROM {grade_categories}
              WHERE courseid = :courseid
@@ -721,13 +792,13 @@ class block_validador extends block_base {
             ['courseid' => $COURSE->id, 'fullname' => 'Examen final']
         );
 
-        if ($exam_final_category) {
-            if (isset($exam_final_category->hidden) && $exam_final_category->hidden != 0) {
-                $gradebook_valid = false;
+        if ($examfinalcategory) {
+            if (isset($examfinalcategory->hidden) && $examfinalcategory->hidden != 0) {
+                $gradebookvalid = false;
                 $reason = 'La categoría no está visible';
             }
         } else {
-            $gradebook_valid = false;
+            $gradebookvalid = false;
             $reason = 'La categoría no existe';
         }
 
@@ -735,13 +806,16 @@ class block_validador extends block_base {
             'id'        => 'gradebook',
             'contextid' => context_course::instance($COURSE->id)->id,
             'name'      => get_string('gradebook', 'block_validador'),
-            'passed'    => $gradebook_valid,
+            'passed'    => $gradebookvalid,
             'title'     => $reason,
         ];
 
         return $validationsgradebook;
     }
 
+    /**
+     * Returns the Examen online grade category record.
+     */
     private function get_exam_online_category() {
         global $COURSE, $DB;
         return $DB->get_record_sql(
@@ -752,6 +826,9 @@ class block_validador extends block_base {
         );
     }
 
+    /**
+     * Validates that the Examen online gradebook category is hidden.
+     */
     private function performs_validations_gradebook_online() {
         global $COURSE;
 
@@ -776,6 +853,9 @@ class block_validador extends block_base {
         ]];
     }
 
+    /**
+     * Validates that the Examen online category weight is zero.
+     */
     private function validate_examen_online_weight() {
         global $COURSE, $DB;
 
@@ -809,6 +889,9 @@ class block_validador extends block_base {
         ]];
     }
 
+    /**
+     * Validates that the quiz has an invisible group restriction.
+     */
     private function grouprestictionvalidation($quiz, $group) {
         global $DB, $COURSE;
         // $validations = [];
@@ -830,15 +913,18 @@ class block_validador extends block_base {
         } else {
             // El cuestionario no tiene restricciones de acceso
             $conrestriccion = false;
-        }    
+        }
         $validations[] = [
             'id' => 'grouprestriccion',
             'name' => get_string('grouprestriccion', 'block_validador'),
             'passed' => $conrestriccion,
-        ];  
+        ];
         return $validations;
     }
 
+    /**
+     * Recursively checks availability tree for a group restriction.
+     */
     private function has_group_restriction($availability, $groupid) {
         if (isset($availability->type) && $availability->type == 'group' && isset($availability->id) && $availability->id == $groupid) {
             return true;
@@ -852,6 +938,9 @@ class block_validador extends block_base {
         return false;
     }
 
+    /**
+     * Returns true if the availability condition is set to hide the activity.
+     */
     private function check_showc($availability) {
         if (!isset($availability->showc)) {
             return true;
@@ -859,26 +948,44 @@ class block_validador extends block_base {
         return !$availability->showc[0];
     }
 
+    /**
+     * Returns applicable course formats.
+     */
     public function applicable_formats() {
         return ['site' => true, 'course-view' => true];
     }
 
+    /**
+     * Only site admins can remove this block.
+     */
     public function instance_can_be_removed() {
         return is_siteadmin();
     }
 
+    /**
+     * Only site admins can hide this block.
+     */
     public function instance_can_be_hidden() {
         return is_siteadmin();
     }
 
+    /**
+     * Only site admins can edit this block.
+     */
     public function user_can_edit() {
         return is_siteadmin();
     }
 
+    /**
+     * Only site admins can add this block.
+     */
     public function user_can_addto($page) {
         return is_siteadmin();
     }
 
+    /**
+     * Returns true as this block has a settings page.
+     */
     public function has_config() {
         return true;
     }

@@ -23,28 +23,28 @@
  */
 
  defined('MOODLE_INTERNAL') || die();
- 
+
  $capabilities = [
     'block/validador:addinstance' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => [],
     ],
-    'block/validador:view' => array(
+    'block/validador:view' => [
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',
         'contextlevel' => CONTEXT_BLOCK,
-        'archetypes' => array(
+        'archetypes' => [
             'editingteacher' => CAP_ALLOW, // Los profesores con edición la tienen permitida
-            'manager' => CAP_ALLOW
-        )
-    ),
-    'block/validador:myaddinstance' => array(
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    'block/validador:myaddinstance' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
-            'admin' => CAP_ALLOW
+            'admin' => CAP_ALLOW,
         ],
-            'clonepermissionsfrom' => 'moodle/my:manageblocks'
-        )
-];
+            'clonepermissionsfrom' => 'moodle/my:manageblocks',
+        ],
+ ];

@@ -24,18 +24,27 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * Admin setting for a date/time picker configuration field.
+ */
 class admin_setting_configdate extends \admin_setting {
+    /**
+     * Returns the current setting value as a Unix timestamp.
+     */
     public function get_setting() {
         $value = $this->config_read($this->name);
         return is_numeric($value) ? (int)$value : 0;
     }
 
+    /**
+     * Saves the setting value as a Unix timestamp.
+     */
     public function write_setting($data) {
         if (is_array($data)) {
-            $year    = isset($data['year'])    ? (int)$data['year']    : 0;
-            $mon     = isset($data['mon'])     ? (int)$data['mon']     : 0;
-            $mday    = isset($data['mday'])    ? (int)$data['mday']    : 0;
-            $hours   = isset($data['hours'])   ? (int)$data['hours']   : 0;
+            $year    = isset($data['year']) ? (int)$data['year'] : 0;
+            $mon     = isset($data['mon']) ? (int)$data['mon'] : 0;
+            $mday    = isset($data['mday']) ? (int)$data['mday'] : 0;
+            $hours   = isset($data['hours']) ? (int)$data['hours'] : 0;
             $minutes = isset($data['minutes']) ? (int)$data['minutes'] : 0;
             if ($year && $mon && $mday) {
                 $timestamp = make_timestamp($year, $mon, $mday, $hours, $minutes);
@@ -51,7 +60,10 @@ class admin_setting_configdate extends \admin_setting {
         return $result ? '' : get_string('errorsetting', 'admin');
     }
 
-    public function output_html($data, $query='') {
+    /**
+     * Renders the date/time picker HTML for the admin settings form.
+     */
+    public function output_html($data, $query = '') {
         $default = $this->get_defaultsetting();
         if ($default) {
             $defaultinfo = userdate($default, get_string('strftimedatetime', 'langconfig'));
@@ -80,7 +92,7 @@ class admin_setting_configdate extends \admin_setting {
             ' '      => ' ',
             'hours'  => range(0, 23),
             ':'      => ':',
-            'minutes'=> range(0, 59)
+            'minutes' => range(0, 59),
         ];
 
         $output = '';
@@ -93,14 +105,24 @@ class admin_setting_configdate extends \admin_setting {
                 $choices = array_combine($choices, $choices);
             }
             if ($type === 'hours' || $type === 'minutes') {
-                $choices = array_map(function($n) { return sprintf('%02d', $n); }, $choices);
+                $choices = array_map(function ($n) {
+                    return sprintf('%02d', $n);
+                }, $choices);
             }
             $selectname = $this->get_full_name() . "[$type]";
             $output .= html_writer::select($choices, $selectname, $data[$type], null);
         }
         $output = html_writer::tag('div', $output, ['class' => 'form-date defaultsnext']);
 
-        return format_admin_setting($this, $this->visiblename, $output,
-            $this->description, false, '', $defaultinfo, $query);
+        return format_admin_setting(
+            $this,
+            $this->visiblename,
+            $output,
+            $this->description,
+            false,
+            '',
+            $defaultinfo,
+            $query
+        );
     }
 }

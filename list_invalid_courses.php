@@ -1,4 +1,26 @@
 <?php
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+/**
+ * Admin page listing courses with failed validations.
+ *
+ * @package   block_validador
+ * @copyright 2024, Sergio Comerón <info@sergiocomeron.com>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 require_once('../../config.php');
 require_once($CFG->libdir . '/tablelib.php');
@@ -177,7 +199,7 @@ if ($exportcsv) {
         get_string('validation', 'block_validador'),
         get_string('activity', 'block_validador'),
         get_string('timecreated', 'block_validador'),
-        get_string('timemodified', 'block_validador')
+        get_string('timemodified', 'block_validador'),
     ]);
 
     // Agregar filas de datos.
@@ -189,7 +211,7 @@ if ($exportcsv) {
             $record->validationname,
             $record->activity,
             userdate($record->timecreated),
-            userdate($record->timemodified)
+            userdate($record->timemodified),
         ]);
     }
     $rs->close();
@@ -211,12 +233,12 @@ if ($exportsummarycsv) {
         get_string('course', 'block_validador'),
         get_string('courselink', 'block_validador'), // Nueva columna para el enlace
         get_string('invalidcount', 'block_validador'),
-        get_string('editingteachers', 'block_validador')
+        get_string('editingteachers', 'block_validador'),
     ]);
 
     foreach ($courses as $course) {
         $courseurl = $CFG->wwwroot . '/course/view.php?id=' . $course->courseid;
-        $teachers_str = !empty($teachersbycourse[$course->courseid])
+        $teachersstr = !empty($teachersbycourse[$course->courseid])
             ? implode(', ', $teachersbycourse[$course->courseid])
             : get_string('noteachers', 'block_validador');
 
@@ -224,7 +246,7 @@ if ($exportsummarycsv) {
             $course->coursename,
             $courseurl,
             $course->errorcount,
-            $teachers_str ?: get_string('noteachers', 'block_validador')
+            $teachersstr ?: get_string('noteachers', 'block_validador'),
         ]);
     }
     fclose($output);
@@ -232,7 +254,7 @@ if ($exportsummarycsv) {
 }
 
 // Obtener el número total de validaciones erróneas (solo cursos visibles).
-$total_invalidations = $DB->count_records_sql(
+$totalinvalidations = $DB->count_records_sql(
     "SELECT COUNT(v.id)
      FROM {block_validador_results} v
      JOIN {course} c ON v.courseid = c.id
@@ -243,7 +265,7 @@ echo $OUTPUT->header();
 
 // Mostrar totales.
 echo $OUTPUT->heading(get_string('totalcoursesinvalid', 'block_validador') . ': ' . $totalcourses, 4);
-echo $OUTPUT->heading(get_string('totalinvalidations', 'block_validador') . ': ' . $total_invalidations, 4);
+echo $OUTPUT->heading(get_string('totalinvalidations', 'block_validador') . ': ' . $totalinvalidations, 4);
 
 // Botones de acción
 $exportcsvurl = new moodle_url($PAGE->url, ['exportcsv' => 1]);
@@ -259,6 +281,7 @@ echo $OUTPUT->single_button($cleanallurl, 'Limpiar todos los registros', 'post')
 /**
  * Renderiza una lista de nombres de profesores como celda HTML compacta.
  * Con 1 nombre lo muestra directamente; con más, colapsa el resto bajo un <details>.
+ * @package block_validador
  */
 function format_teachers_html(array $names): string {
     if (empty($names)) {
@@ -306,7 +329,7 @@ echo html_writer::tag('th', 'Obviar');           // Nueva cabecera para obviar e
 echo html_writer::end_tag('tr');
 
 foreach ($pagedcourses as $course) {
-    $teachers_str = format_teachers_html($teachersbycourse[$course->courseid] ?? []);
+    $teachersstr = format_teachers_html($teachersbycourse[$course->courseid] ?? []);
 
     $detailurl    = new moodle_url($PAGE->url, ['filtercourse' => $course->courseid, 'filtervalidation' => $filtervalidation]);
     $deleteurl    = new moodle_url($PAGE->url, ['deletecourse' => $course->courseid, 'sesskey' => sesskey()]);
@@ -319,7 +342,7 @@ foreach ($pagedcourses as $course) {
     echo html_writer::tag('td', html_writer::link($courseurl, $course->coursename));
     echo html_writer::tag('td', $course->errorcount);
     echo html_writer::tag('td', $course->errors);
-    echo html_writer::tag('td', $teachers_str);
+    echo html_writer::tag('td', $teachersstr);
     echo html_writer::tag('td', html_writer::link($detailurl, get_string('details')));
     echo html_writer::tag('td', $deletebutton);
     echo html_writer::tag('td', $ignorebutton);
@@ -333,9 +356,12 @@ echo html_writer::empty_tag('br');
 
 /**
  * Clase de la tabla personalizada.
+ * @package block_validador
  */
 class invalid_courses_table extends table_sql {
-
+    /**
+     * Initialises the table columns and headers.
+     */
     public function __construct($uniqueid) {
         parent::__construct($uniqueid);
 
@@ -346,7 +372,7 @@ class invalid_courses_table extends table_sql {
             'timecreated',
             'timemodified',
             'editingteachers',
-            'deleteaction'
+            'deleteaction',
         ]);
 
         $this->define_headers([
@@ -356,7 +382,7 @@ class invalid_courses_table extends table_sql {
             get_string('timecreated', 'block_validador'),
             get_string('timemodified', 'block_validador'),
             get_string('editingteachers', 'block_validador'),
-            get_string('delete')
+            get_string('delete'),
         ]);
 
         $this->sortable(true, 'timemodified', SORT_DESC);
@@ -364,12 +390,18 @@ class invalid_courses_table extends table_sql {
         $this->pageable(true);
     }
 
+    /**
+     * Renders the course name column as a link.
+     */
     public function col_coursename($values) {
         global $OUTPUT;
         $courseurl = new moodle_url('/course/view.php', ['id' => $values->courseid]);
         return $OUTPUT->action_link($courseurl, $values->coursename);
     }
 
+    /**
+     * Renders the activity column as a link to the course module edit page.
+     */
     public function col_activity($values) {
         global $OUTPUT;
         if (empty($values->cmid)) {
@@ -379,24 +411,36 @@ class invalid_courses_table extends table_sql {
         return $OUTPUT->action_link($activityurl, $values->activity);
     }
 
+    /**
+     * Renders the creation date column.
+     */
     public function col_timecreated($values) {
         return userdate($values->timecreated);
     }
 
+    /**
+     * Renders the last modified date column.
+     */
     public function col_timemodified($values) {
         return userdate($values->timemodified);
     }
 
+    /**
+     * Renders the delete action button column.
+     */
     public function col_deleteaction($values) {
         global $OUTPUT, $PAGE;
         $deleteurl = new moodle_url($PAGE->url, [
             'resultid' => $values->resultid,
             'confirm' => 1,
-            'sesskey' => sesskey()
+            'sesskey' => sesskey(),
         ]);
         return $OUTPUT->single_button($deleteurl, get_string('delete'), 'post');
     }
 
+    /**
+     * Renders the editing teachers column.
+     */
     public function col_editingteachers($values) {
         global $DB;
         static $roleid = null;
