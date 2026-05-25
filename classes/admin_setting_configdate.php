@@ -24,6 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+namespace block_validador;
+
 /**
  * Admin setting for a date/time picker configuration field.
  */
