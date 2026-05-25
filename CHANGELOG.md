@@ -6,6 +6,14 @@
 - Añade workflow de auto-bump de versión en cada push a main
 - Añade CI/CD: auto-release, release y CI con syntax check y codestyle
 
+## [v1.1.5] - 2026-05-25
+
+### Correcciones
+
+- añadir --repo a gh release create para evitar error fuera del workspace
+
+
+
 ## [v1.1.4] - 2026-05-25
 
 ### Correcciones
