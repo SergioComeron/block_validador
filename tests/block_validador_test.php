@@ -30,7 +30,6 @@ require_once($CFG->dirroot . '/blocks/validador/block_validador.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class block_validador_test extends \advanced_testcase {
-
     /** @var \block_validador Block instance used across tests. */
     private \block_validador $block;
 
