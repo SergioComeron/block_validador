@@ -144,3 +144,27 @@ jobs:
         run: |
           git tag ${{ steps.version.outputs.new_tag }}
           git push origin ${{ steps.version.outputs.new_tag }}
+
+      - name: Create GitHub Release
+        if: steps.commit.outputs.skipped == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          NEW_TAG="${{ steps.version.outputs.new_tag }}"
+
+          # Extract changelog notes for this version
+          NOTES=$(awk "/^## \[${NEW_TAG}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          [ -z "$NOTES" ] && NOTES="Ver CHANGELOG.md para detalles."
+
+          # Build plugin zip (exclude dev files)
+          cp -r "$GITHUB_WORKSPACE" /tmp/validador
+          rm -rf /tmp/validador/.git /tmp/validador/.github /tmp/validador/.claude /tmp/validador/vendor
+          rm -f /tmp/validador/CLAUDE.md /tmp/validador/CONTRIBUTING.md /tmp/validador/.gitignore
+          rm -f /tmp/validador/composer.json /tmp/validador/composer.lock /tmp/validador/phpunit.xml
+          cd /tmp
+          zip -r "validador-${NEW_TAG}.zip" validador
+
+          gh release create "${NEW_TAG}" \
+            --title "${NEW_TAG}" \
+            --notes "${NOTES}" \
+            "/tmp/validador-${NEW_TAG}.zip"
