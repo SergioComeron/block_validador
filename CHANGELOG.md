@@ -6,6 +6,14 @@
 - Añade workflow de auto-bump de versión en cada push a main
 - Añade CI/CD: auto-release, release y CI con syntax check y codestyle
 
+## [v1.1.2] - 2026-05-25
+
+### Otros cambios
+
+- Corrige brace de apertura de clase en test
+
+
+
 ## [v1.1.1] - 2026-05-25
 
 
