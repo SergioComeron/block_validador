@@ -35,7 +35,11 @@ jobs:
           MINOR=$(echo "$VERSION" | cut -d. -f2)
           PATCH=$(echo "$VERSION" | cut -d. -f3)
 
-          COMMITS=$(git log "${LATEST}..HEAD" --oneline)
+          if git rev-parse "$LATEST" >/dev/null 2>&1; then
+            COMMITS=$(git log "${LATEST}..HEAD" --oneline)
+          else
+            COMMITS=$(git log HEAD --oneline)
+          fi
           echo "Commits since ${LATEST}:"
           echo "$COMMITS"
 

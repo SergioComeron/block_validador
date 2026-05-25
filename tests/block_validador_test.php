@@ -60,6 +60,8 @@ final class block_validador_test extends \advanced_testcase {
     // -------------------------------------------------------------------------
 
     /**
+     * Timelimit passes for 90 minutes.
+     *
      * @covers \block_validador::timelimitvalidation
      */
     public function test_timelimit_passes_for_90_minutes(): void {
@@ -69,6 +71,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Timelimit passes for 45 minutes.
+     *
      * @covers \block_validador::timelimitvalidation
      */
     public function test_timelimit_passes_for_45_minutes(): void {
@@ -78,6 +82,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Timelimit fails for other duration.
+     *
      * @covers \block_validador::timelimitvalidation
      */
     public function test_timelimit_fails_for_other_duration(): void {
@@ -87,6 +93,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Timelimit fails for zero.
+     *
      * @covers \block_validador::timelimitvalidation
      */
     public function test_timelimit_fails_for_zero(): void {
@@ -100,6 +108,8 @@ final class block_validador_test extends \advanced_testcase {
     // -------------------------------------------------------------------------
 
     /**
+     * Questionsperpage passes when zero.
+     *
      * @covers \block_validador::questionperpagevalidation
      */
     public function test_questionsperpage_passes_when_zero(): void {
@@ -109,6 +119,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Questionsperpage fails when not zero.
+     *
      * @covers \block_validador::questionperpagevalidation
      */
     public function test_questionsperpage_fails_when_not_zero(): void {
@@ -122,6 +134,8 @@ final class block_validador_test extends \advanced_testcase {
     // -------------------------------------------------------------------------
 
     /**
+     * Quiz has dates passes when both set.
+     *
      * @covers \block_validador::validate_quiz_has_dates
      */
     public function test_quiz_has_dates_passes_when_both_set(): void {
@@ -131,6 +145,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Quiz has dates fails when timeopen missing.
+     *
      * @covers \block_validador::validate_quiz_has_dates
      */
     public function test_quiz_has_dates_fails_when_timeopen_missing(): void {
@@ -140,6 +156,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Quiz has dates fails when timeclose missing.
+     *
      * @covers \block_validador::validate_quiz_has_dates
      */
     public function test_quiz_has_dates_fails_when_timeclose_missing(): void {
@@ -149,6 +167,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Quiz has dates fails when both missing.
+     *
      * @covers \block_validador::validate_quiz_has_dates
      */
     public function test_quiz_has_dates_fails_when_both_missing(): void {
@@ -162,6 +182,8 @@ final class block_validador_test extends \advanced_testcase {
     // -------------------------------------------------------------------------
 
     /**
+     * Autosubmit passes for autosubmit.
+     *
      * @covers \block_validador::validate_quiz_auto_submit
      */
     public function test_autosubmit_passes_for_autosubmit(): void {
@@ -171,6 +193,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Autosubmit fails for graceperiod.
+     *
      * @covers \block_validador::validate_quiz_auto_submit
      */
     public function test_autosubmit_fails_for_graceperiod(): void {
@@ -180,6 +204,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Autosubmit fails for open.
+     *
      * @covers \block_validador::validate_quiz_auto_submit
      */
     public function test_autosubmit_fails_for_open(): void {
@@ -193,6 +219,8 @@ final class block_validador_test extends \advanced_testcase {
     // -------------------------------------------------------------------------
 
     /**
+     * Check showc returns true when not set.
+     *
      * @covers \block_validador::check_showc
      */
     public function test_check_showc_returns_true_when_not_set(): void {
@@ -202,6 +230,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Check showc returns true when showc is false.
+     *
      * @covers \block_validador::check_showc
      */
     public function test_check_showc_returns_true_when_showc_is_false(): void {
@@ -211,6 +241,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Check showc returns false when showc is true.
+     *
      * @covers \block_validador::check_showc
      */
     public function test_check_showc_returns_false_when_showc_is_true(): void {
@@ -224,6 +256,8 @@ final class block_validador_test extends \advanced_testcase {
     // -------------------------------------------------------------------------
 
     /**
+     * Has group restriction direct match.
+     *
      * @covers \block_validador::has_group_restriction
      */
     public function test_has_group_restriction_direct_match(): void {
@@ -233,6 +267,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Has group restriction no match different id.
+     *
      * @covers \block_validador::has_group_restriction
      */
     public function test_has_group_restriction_no_match_different_id(): void {
@@ -242,6 +278,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Has group restriction nested match.
+     *
      * @covers \block_validador::has_group_restriction
      */
     public function test_has_group_restriction_nested_match(): void {
@@ -257,6 +295,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Has group restriction nested no match.
+     *
      * @covers \block_validador::has_group_restriction
      */
     public function test_has_group_restriction_nested_no_match(): void {
@@ -276,6 +316,8 @@ final class block_validador_test extends \advanced_testcase {
     // -------------------------------------------------------------------------
 
     /**
+     * Check completion condition returns false for non completion type.
+     *
      * @covers \block_validador::check_completion_condition
      */
     public function test_check_completion_condition_returns_false_for_non_completion_type(): void {
@@ -285,6 +327,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Check completion condition returns false when no conditions.
+     *
      * @covers \block_validador::check_completion_condition
      */
     public function test_check_completion_condition_returns_false_when_no_conditions(): void {
@@ -298,6 +342,8 @@ final class block_validador_test extends \advanced_testcase {
     // -------------------------------------------------------------------------
 
     /**
+     * Gradetopass passes when gradepass is 5.
+     *
      * @covers \block_validador::gradetopass
      */
     public function test_gradetopass_passes_when_gradepass_is_5(): void {
@@ -319,6 +365,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Gradetopass fails when gradepass is not 5.
+     *
      * @covers \block_validador::gradetopass
      */
     public function test_gradetopass_fails_when_gradepass_is_not_5(): void {
@@ -344,6 +392,8 @@ final class block_validador_test extends \advanced_testcase {
     // -------------------------------------------------------------------------
 
     /**
+     * Autosubmit returns expected id.
+     *
      * @covers \block_validador::validate_quiz_auto_submit
      */
     public function test_autosubmit_returns_expected_id(): void {
@@ -357,6 +407,8 @@ final class block_validador_test extends \advanced_testcase {
     // -------------------------------------------------------------------------
 
     /**
+     * Return pledge validations structure.
+     *
      * @covers \block_validador::return_pledge_validations
      */
     public function test_return_pledge_validations_structure(): void {
@@ -369,6 +421,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Return pledge validations both false.
+     *
      * @covers \block_validador::return_pledge_validations
      */
     public function test_return_pledge_validations_both_false(): void {
@@ -378,6 +432,8 @@ final class block_validador_test extends \advanced_testcase {
     }
 
     /**
+     * Return pledge validations both true.
+     *
      * @covers \block_validador::return_pledge_validations
      */
     public function test_return_pledge_validations_both_true(): void {
