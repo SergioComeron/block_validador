@@ -24,6 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot . '/blocks/validador/classes/admin_setting_configdate.php');
+
 if ($ADMIN->fulltree) {
     // Configuración de fecha mínima de creación de grupos
     $settings->add(new admin_setting_configdate(
