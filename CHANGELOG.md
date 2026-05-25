@@ -6,6 +6,16 @@
 - Añade workflow de auto-bump de versión en cada push a main
 - Añade CI/CD: auto-release, release y CI con syntax check y codestyle
 
+## [v1.1.3] - 2026-05-25
+
+### Correcciones
+
+- move namespace before defined() in admin_setting_configdate
+- namespace admin_setting_configdate to prevent double-load during PHPUnit init
+- require admin_setting_configdate in settings.php for PHPUnit init
+
+
+
 ## [v1.1.2] - 2026-05-25
 
 ### Otros cambios
