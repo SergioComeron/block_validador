@@ -33,6 +33,10 @@ $deletecourse = optional_param('deletecourse', 0, PARAM_INT);
 // Recuperar parámetro para ignorar registros de un curso.
 $ignorecourse = optional_param('ignorecourse', 0, PARAM_INT);
 
+$page             = optional_param('page', 0, PARAM_INT);
+$perpage          = 20;
+$filtervalidation = optional_param('filtervalidation', '', PARAM_ALPHANUMEXT);
+
 // Procesar limpieza completa si se solicita.
 $cleanall = optional_param('cleanall', 0, PARAM_BOOL);
 if ($cleanall && confirm_sesskey()) {
@@ -85,8 +89,19 @@ if (!empty($filtercourse)) {
     $where .= " AND v.courseid = :filtercourse";
     $params['filtercourse'] = $filtercourse;
 }
+if (!empty($filtervalidation)) {
+    $where .= " AND v.validationname = :filtervalidation";
+    $params['filtervalidation'] = $filtervalidation;
+}
 
 // Consulta para agrupar por curso.
+$groupwhere  = "v.passed = 0 AND c.visible = 1";
+$groupparams = [];
+if (!empty($filtervalidation)) {
+    $groupwhere .= " AND v.validationname = :filtervalidation";
+    $groupparams['filtervalidation'] = $filtervalidation;
+}
+
 if ($CFG->dbtype == 'pgsql') {
     $sql = "
         SELECT
@@ -96,7 +111,7 @@ if ($CFG->dbtype == 'pgsql') {
             COUNT(v.id) AS errorcount
         FROM {block_validador_results} v
         JOIN {course} c ON v.courseid = c.id
-        WHERE v.passed = 0 AND c.visible = 1
+        WHERE $groupwhere
         GROUP BY c.id, c.fullname
         ORDER BY errorcount DESC
     ";
@@ -109,12 +124,34 @@ if ($CFG->dbtype == 'pgsql') {
             COUNT(v.id) AS errorcount
         FROM {block_validador_results} v
         JOIN {course} c ON v.courseid = c.id
-        WHERE v.passed = 0 AND c.visible = 1
+        WHERE $groupwhere
         GROUP BY c.id, c.fullname
         ORDER BY errorcount DESC
     ";
 }
-$courses = $DB->get_records_sql($sql);
+$courses     = $DB->get_records_sql($sql, $groupparams);
+$totalcourses = count($courses);
+$pagedcourses = array_slice($courses, $page * $perpage, $perpage, true);
+
+// Pre-cargar profesores de todos los cursos en una sola query.
+$teachersbycourse = [];
+if (!empty($courses)) {
+    [$insql, $inparams] = $DB->get_in_or_equal(array_keys($courses), SQL_PARAMS_NAMED, 'cid');
+    $inparams['contextlevel'] = CONTEXT_COURSE;
+    $inparams['roleid']       = $editingteacherroleid;
+    $teacherrows = $DB->get_records_sql("
+        SELECT ra.id, ctx.instanceid AS courseid, u.firstname, u.lastname
+          FROM {role_assignments} ra
+          JOIN {user} u ON ra.userid = u.id
+          JOIN {context} ctx ON ra.contextid = ctx.id
+         WHERE ctx.contextlevel = :contextlevel
+           AND ra.roleid = :roleid
+           AND ctx.instanceid $insql
+    ", $inparams);
+    foreach ($teacherrows as $row) {
+        $teachersbycourse[$row->courseid][] = $row->firstname . ' ' . $row->lastname;
+    }
+}
 
 // Exportar datos a CSV si se solicita.
 if ($exportcsv) {
@@ -179,27 +216,9 @@ if ($exportsummarycsv) {
 
     foreach ($courses as $course) {
         $courseurl = $CFG->wwwroot . '/course/view.php?id=' . $course->courseid;
-
-        // Obtener profesores del curso.
-        $sqlteachers = "
-            SELECT u.id, u.firstname, u.lastname
-            FROM {role_assignments} ra
-            JOIN {user} u ON ra.userid = u.id
-            JOIN {context} ctx ON ra.contextid = ctx.id
-            WHERE ctx.contextlevel = :contextlevel
-              AND ctx.instanceid = :courseid
-              AND ra.roleid = :roleid
-        ";
-        $teacherparams = [
-            'contextlevel' => CONTEXT_COURSE,
-            'courseid' => $course->courseid,
-            'roleid' => $editingteacherroleid
-        ];
-        $teachers = $DB->get_records_sql($sqlteachers, $teacherparams);
-        $teacher_names = array_map(function($t) {
-            return $t->firstname . ' ' . $t->lastname;
-        }, $teachers);
-        $teachers_str = implode(', ', $teacher_names);
+        $teachers_str = !empty($teachersbycourse[$course->courseid])
+            ? implode(', ', $teachersbycourse[$course->courseid])
+            : get_string('noteachers', 'block_validador');
 
         fputcsv($output, [
             $course->coursename,
@@ -222,7 +241,8 @@ $total_invalidations = $DB->count_records_sql(
 
 echo $OUTPUT->header();
 
-// Mostrar el total de validaciones erróneas.
+// Mostrar totales.
+echo $OUTPUT->heading(get_string('totalcoursesinvalid', 'block_validador') . ': ' . $totalcourses, 4);
 echo $OUTPUT->heading(get_string('totalinvalidations', 'block_validador') . ': ' . $total_invalidations, 4);
 
 // Botones de acción
@@ -236,6 +256,43 @@ echo $OUTPUT->single_button($exportsummarycsvurl, get_string('exportsummarycsv',
 $cleanallurl = new moodle_url($PAGE->url, ['cleanall' => 1, 'sesskey' => sesskey()]);
 echo $OUTPUT->single_button($cleanallurl, 'Limpiar todos los registros', 'post');
 
+/**
+ * Renderiza una lista de nombres de profesores como celda HTML compacta.
+ * Con 1 nombre lo muestra directamente; con más, colapsa el resto bajo un <details>.
+ */
+function format_teachers_html(array $names): string {
+    if (empty($names)) {
+        return get_string('noteachers', 'block_validador');
+    }
+    if (count($names) === 1) {
+        return s($names[0]);
+    }
+    $first = s(array_shift($names));
+    $rest  = implode('<br>', array_map('s', $names));
+    return $first . '<br><details><summary>+' . count($names) . ' más</summary>' . $rest . '</details>';
+}
+
+// Cargar tipos de error distintos para el selector.
+$validationnames = $DB->get_fieldset_sql(
+    "SELECT DISTINCT validationname FROM {block_validador_results} WHERE passed = 0 ORDER BY validationname"
+);
+
+// Formulario de filtro por tipo de error.
+echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url, 'class' => 'mb-3']);
+echo html_writer::start_tag('div', ['class' => 'd-flex align-items-center gap-2']);
+echo html_writer::tag('label', 'Filtrar por error:', ['for' => 'filtervalidation', 'class' => 'mb-0']);
+$options = ['' => 'Todos'];
+foreach ($validationnames as $vname) {
+    $options[$vname] = $vname;
+}
+echo html_writer::select($options, 'filtervalidation', $filtervalidation, false, ['id' => 'filtervalidation']);
+echo html_writer::empty_tag('input', ['type' => 'submit', 'value' => 'Filtrar', 'class' => 'btn btn-primary btn-sm']);
+if (!empty($filtervalidation)) {
+    echo html_writer::link($PAGE->url, 'Quitar filtro', ['class' => 'btn btn-secondary btn-sm']);
+}
+echo html_writer::end_tag('div');
+echo html_writer::end_tag('form');
+
 // Mostrar tabla resumen.
 echo html_writer::start_tag('table', ['class' => 'generaltable']);
 echo html_writer::start_tag('tr');
@@ -248,43 +305,13 @@ echo html_writer::tag('th', 'Borrar registros'); // Botón existente para elimin
 echo html_writer::tag('th', 'Obviar');           // Nueva cabecera para obviar el curso
 echo html_writer::end_tag('tr');
 
-foreach ($courses as $course) {
-    // Obtener profesores.
-    $sqlteachers = "
-        SELECT u.id, u.firstname, u.lastname
-        FROM {role_assignments} ra
-        JOIN {user} u ON ra.userid = u.id
-        JOIN {context} ctx ON ra.contextid = ctx.id
-        WHERE ctx.contextlevel = :contextlevel
-          AND ctx.instanceid = :courseid
-          AND ra.roleid = :roleid
-    ";
-    $teacherparams = [
-        'contextlevel' => CONTEXT_COURSE,
-        'courseid' => $course->courseid,
-        'roleid' => $editingteacherroleid,
-    ];
-    $teachers = $DB->get_records_sql($sqlteachers, $teacherparams);
-    $teacher_names = array_map(function($t) {
-        return $t->firstname . ' ' . $t->lastname;
-    }, $teachers);
-    $teachers_str = implode(', ', $teacher_names);
+foreach ($pagedcourses as $course) {
+    $teachers_str = format_teachers_html($teachersbycourse[$course->courseid] ?? []);
 
-    // Enlace a detalle.
-    $detailurl = new moodle_url($PAGE->url, ['filtercourse' => $course->courseid]);
-
-    // Botón para borrar registros del curso.
-    $deleteurl = new moodle_url($PAGE->url, [
-        'deletecourse' => $course->courseid,
-        'sesskey' => sesskey()
-    ]);
+    $detailurl    = new moodle_url($PAGE->url, ['filtercourse' => $course->courseid, 'filtervalidation' => $filtervalidation]);
+    $deleteurl    = new moodle_url($PAGE->url, ['deletecourse' => $course->courseid, 'sesskey' => sesskey()]);
+    $ignoreurl    = new moodle_url($PAGE->url, ['ignorecourse' => $course->courseid, 'sesskey' => sesskey()]);
     $deletebutton = $OUTPUT->single_button($deleteurl, get_string('delete'), 'post');
-
-    // Botón para ignorar el curso (establece passed = 2).
-    $ignoreurl = new moodle_url($PAGE->url, [
-        'ignorecourse' => $course->courseid,
-        'sesskey' => sesskey()
-    ]);
     $ignorebutton = $OUTPUT->single_button($ignoreurl, 'Obviar', 'post');
 
     echo html_writer::start_tag('tr');
@@ -292,13 +319,16 @@ foreach ($courses as $course) {
     echo html_writer::tag('td', html_writer::link($courseurl, $course->coursename));
     echo html_writer::tag('td', $course->errorcount);
     echo html_writer::tag('td', $course->errors);
-    echo html_writer::tag('td', $teachers_str ?: get_string('noteachers', 'block_validador'));
+    echo html_writer::tag('td', $teachers_str);
     echo html_writer::tag('td', html_writer::link($detailurl, get_string('details')));
     echo html_writer::tag('td', $deletebutton);
     echo html_writer::tag('td', $ignorebutton);
     echo html_writer::end_tag('tr');
 }
 echo html_writer::end_tag('table');
+
+$pagingurl = new moodle_url($PAGE->url, ['filtervalidation' => $filtervalidation]);
+echo $OUTPUT->paging_bar($totalcourses, $page, $perpage, $pagingurl);
 echo html_writer::empty_tag('br');
 
 /**
@@ -369,39 +399,44 @@ class invalid_courses_table extends table_sql {
 
     public function col_editingteachers($values) {
         global $DB;
+        static $roleid = null;
+        static $cache = [];
 
-        $sql = "
-            SELECT u.id, u.firstname, u.lastname
-            FROM {role_assignments} ra
-            JOIN {user} u ON ra.userid = u.id
-            JOIN {context} ctx ON ra.contextid = ctx.id
-            WHERE ctx.contextlevel = :contextlevel
-              AND ctx.instanceid = :courseid
-              AND ra.roleid = :roleid
-        ";
-        $params = [
-            'contextlevel' => CONTEXT_COURSE,
-            'courseid' => $values->courseid,
-            'roleid' => $DB->get_field('role', 'id', ['shortname' => 'editingteacher']),
-        ];
-        $teachers = $DB->get_records_sql($sql, $params);
-
-        if (empty($teachers)) {
-            return get_string('noteachers', 'block_validador');
+        if ($roleid === null) {
+            $roleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
         }
 
-        $teacher_names = array_map(function($t) {
-            return $t->firstname . ' ' . $t->lastname;
-        }, $teachers);
+        if (!array_key_exists($values->courseid, $cache)) {
+            $teachers = $DB->get_records_sql("
+                SELECT u.id, u.firstname, u.lastname
+                  FROM {role_assignments} ra
+                  JOIN {user} u ON ra.userid = u.id
+                  JOIN {context} ctx ON ra.contextid = ctx.id
+                 WHERE ctx.contextlevel = :contextlevel
+                   AND ctx.instanceid = :courseid
+                   AND ra.roleid = :roleid
+            ", ['contextlevel' => CONTEXT_COURSE, 'courseid' => $values->courseid, 'roleid' => $roleid]);
 
-        return implode(', ', $teacher_names);
+            $names = empty($teachers)
+                ? []
+                : array_map(fn($t) => $t->firstname . ' ' . $t->lastname, $teachers);
+            $cache[$values->courseid] = format_teachers_html($names);
+        }
+
+        return $cache[$values->courseid];
     }
 }
 
-// Configuración de la tabla y consulta SQL.
-$table = new invalid_courses_table('invalid-courses-table');
-$table->define_baseurl($PAGE->url);
-$table->set_sql($fields, $from, $where, $params);
-$table->out(10, true);
+// Tabla de detalle: solo se muestra cuando se filtra por un curso concreto.
+if (!empty($filtercourse)) {
+    $coursename = $DB->get_field('course', 'fullname', ['id' => $filtercourse]);
+    echo $OUTPUT->heading($coursename, 3);
+    echo html_writer::link($PAGE->url, '← ' . get_string('back'), ['class' => 'btn btn-secondary btn-sm mb-2']);
+
+    $table = new invalid_courses_table('invalid-courses-table');
+    $table->define_baseurl($PAGE->url);
+    $table->set_sql($fields, $from, $where, $params);
+    $table->out(10, true);
+}
 
 echo $OUTPUT->footer();

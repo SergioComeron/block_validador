@@ -25,17 +25,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
-    // Obtener todas las categorías de cursos
-    $categories = core_course_category::make_categories_list();
-
-    $settings->add(new admin_setting_configmultiselect(
-        'block_validador/showcategories',
-        get_string('showcategories', 'block_validador'),
-        get_string('showcategories_desc', 'block_validador'),
-        [],
-        $categories
-    ));
-
     // Configuración de fecha mínima de creación de grupos
     $settings->add(new admin_setting_configdate(
         'block_validador/min_group_timecreated',

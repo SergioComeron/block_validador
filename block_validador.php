@@ -42,14 +42,21 @@ class block_validador extends block_base {
             return $this->content;
         }
 
-        $allowed_categories = get_config('block_validador', 'showcategories');
-        if (!in_array($COURSE->category, explode(',', $allowed_categories))) {
+
+        if ($COURSE->visible == 0) {
             $this->content = new stdClass();
             $this->content->text = '';
             return $this->content;
         }
 
-        if ($COURSE->visible == 0) {
+        $hasbatchgroups = $DB->count_records_sql("
+            SELECT COUNT(*)
+              FROM {local_creaexamen_quiz_log} ql
+              JOIN {local_creaexamen_batches} b ON b.id = ql.batchid
+             WHERE ql.courseid = :courseid
+               AND b.active = 1
+        ", ['courseid' => $COURSE->id]);
+        if (!$hasbatchgroups) {
             $this->content = new stdClass();
             $this->content->text = '';
             return $this->content;
@@ -104,13 +111,36 @@ class block_validador extends block_base {
                 }
             }
             foreach ($valid_groups as $group) {
-                $quiz = $DB->get_record_sql('SELECT * FROM {quiz} WHERE course = ? AND name LIKE ?', [$COURSE->id, $group->name . '%']);
-                if (!$quiz) {
+                $groupquizzes = $DB->get_records_sql(
+                    'SELECT * FROM {quiz} WHERE course = ? AND name LIKE ? ORDER BY id ASC',
+                    [$COURSE->id, $group->name . '%']
+                );
+                if (empty($groupquizzes)) {
                     continue;
                 }
-                $this->content->text .= "<strong>Cuestionario: {$quiz->name}</strong><br>";
+                $quiz = reset($groupquizzes);
                 $cm = get_coursemodule_from_instance('quiz', $quiz->id);
                 $contextid = context_module::instance($cm->id)->id;
+
+                $this->content->text .= "<strong>Cuestionario: {$quiz->name}</strong><br>";
+
+                $multipleval = [
+                    'id'     => 'quizmultipleforgroup',
+                    'name'   => get_string('quizmultipleforgroup', 'block_validador'),
+                    'passed' => count($groupquizzes) === 1,
+                ];
+                $this->content->text .= $this->save_and_render_validation($multipleval, $contextid);
+                $validations_passed = $validations_passed && $multipleval['passed'];
+                if (!$multipleval['passed']) {
+                    continue;
+                }
+
+                $datesvalidation = $this->validate_quiz_has_dates($quiz)[0];
+                $this->content->text .= $this->save_and_render_validation($datesvalidation, $contextid);
+                $validations_passed = $validations_passed && $datesvalidation['passed'];
+                if (!$datesvalidation['passed']) {
+                    continue;
+                }
 
                 foreach ($this->validate_quiz_pledge_access($quiz) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid);
@@ -575,6 +605,15 @@ class block_validador extends block_base {
         return $validations;
     }
 
+    private function validate_quiz_has_dates($quiz): array {
+        $passed = !empty($quiz->timeopen) && !empty($quiz->timeclose);
+        return [[
+            'id'     => 'quizhasdates',
+            'name'   => get_string('quizhasdates', 'block_validador'),
+            'passed' => $passed,
+        ]];
+    }
+
     private function timelimitvalidation($quiz) {
         $validations = [];
         if ($quiz->timelimit == 5400 || $quiz->timelimit == 2700) { // 5400 segundos = 90 minutos, 2700 segundos = 45 minutos
@@ -822,6 +861,22 @@ class block_validador extends block_base {
 
     public function applicable_formats() {
         return ['site' => true, 'course-view' => true];
+    }
+
+    public function instance_can_be_removed() {
+        return is_siteadmin();
+    }
+
+    public function instance_can_be_hidden() {
+        return is_siteadmin();
+    }
+
+    public function user_can_edit() {
+        return is_siteadmin();
+    }
+
+    public function user_can_addto($page) {
+        return is_siteadmin();
     }
 
     public function has_config() {
