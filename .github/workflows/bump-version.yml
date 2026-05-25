@@ -165,6 +165,7 @@ jobs:
           zip -r "validador-${NEW_TAG}.zip" validador
 
           gh release create "${NEW_TAG}" \
+            --repo "$GITHUB_REPOSITORY" \
             --title "${NEW_TAG}" \
             --notes "${NOTES}" \
             "/tmp/validador-${NEW_TAG}.zip"
