@@ -6,6 +6,14 @@
 - Añade workflow de auto-bump de versión en cada push a main
 - Añade CI/CD: auto-release, release y CI con syntax check y codestyle
 
+## [v1.1.4] - 2026-05-25
+
+### Correcciones
+
+- crear GitHub Release directamente en bump-version en lugar de depender de tag-push
+
+
+
 ## [v1.1.3] - 2026-05-25
 
 ### Correcciones

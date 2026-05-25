@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_validador';
-$plugin->version = 2026052503; // Fecha en formato YYYYMMDDXX.
+$plugin->version = 2026052504; // Fecha en formato YYYYMMDDXX.
 $plugin->requires = 2022112800; // Requiere Moodle 4.0 o superior.
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '1.1.3';
+$plugin->release = '1.1.4';
