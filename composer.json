@@ -1,0 +1,12 @@
+{
+    "name": "sergiocomeron/moodle-block_validador",
+    "description": "Moodle validador block - dev dependencies",
+    "require-dev": {
+        "moodlehq/moodle-cs": "*"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

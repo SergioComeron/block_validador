@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build and release zip
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: Check PHP syntax
+        run: find . -name "*.php" -not -path "./.git/*" | xargs -I{} php -l {}
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Create plugin zip
+        run: |
+          cp -r $GITHUB_WORKSPACE /tmp/validador
+          rm -rf /tmp/validador/.git
+          rm -rf /tmp/validador/.github
+          rm -rf /tmp/validador/.claude
+          rm -rf /tmp/validador/vendor
+          rm -f /tmp/validador/CLAUDE.md
+          rm -f /tmp/validador/CONTRIBUTING.md
+          rm -f /tmp/validador/.gitignore
+          rm -f /tmp/validador/composer.json
+          rm -f /tmp/validador/composer.lock
+          cd /tmp
+          zip -r validador-${{ steps.version.outputs.VERSION }}.zip validador
+          mv /tmp/validador-${{ steps.version.outputs.VERSION }}.zip $GITHUB_WORKSPACE/
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          NOTES=$(awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          [ -z "$NOTES" ] && NOTES="Ver CHANGELOG.md para detalles."
+          echo "$NOTES" > release_notes.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: validador-${{ steps.version.outputs.VERSION }}.zip
+          body_path: release_notes.txt
+          name: "${{ steps.version.outputs.VERSION }}"
