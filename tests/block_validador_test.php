@@ -16,6 +16,8 @@
 
 namespace block_validador;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -29,6 +31,7 @@ require_once($CFG->dirroot . '/blocks/validador/block_validador.php');
  * @copyright  2024, Sergio Comerón <info@sergiocomeron.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+#[CoversClass(\block_validador::class)]
 final class block_validador_test extends \advanced_testcase {
     /** @var \block_validador Block instance used across tests. */
     private \block_validador $block;
@@ -60,8 +63,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Timelimit passes for 90 minutes.
-     *
-     * @covers \block_validador::timelimitvalidation
      */
     public function test_timelimit_passes_for_90_minutes(): void {
         $quiz = (object)['timelimit' => 5400];
@@ -71,8 +72,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Timelimit passes for 45 minutes.
-     *
-     * @covers \block_validador::timelimitvalidation
      */
     public function test_timelimit_passes_for_45_minutes(): void {
         $quiz = (object)['timelimit' => 2700];
@@ -82,8 +81,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Timelimit fails for other duration.
-     *
-     * @covers \block_validador::timelimitvalidation
      */
     public function test_timelimit_fails_for_other_duration(): void {
         $quiz = (object)['timelimit' => 3600];
@@ -93,8 +90,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Timelimit fails for zero.
-     *
-     * @covers \block_validador::timelimitvalidation
      */
     public function test_timelimit_fails_for_zero(): void {
         $quiz = (object)['timelimit' => 0];
@@ -108,8 +103,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Questionsperpage passes when zero.
-     *
-     * @covers \block_validador::questionperpagevalidation
      */
     public function test_questionsperpage_passes_when_zero(): void {
         $quiz = (object)['questionsperpage' => 0];
@@ -119,8 +112,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Questionsperpage fails when not zero.
-     *
-     * @covers \block_validador::questionperpagevalidation
      */
     public function test_questionsperpage_fails_when_not_zero(): void {
         $quiz = (object)['questionsperpage' => 1];
@@ -134,8 +125,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Quiz has dates passes when both set.
-     *
-     * @covers \block_validador::validate_quiz_has_dates
      */
     public function test_quiz_has_dates_passes_when_both_set(): void {
         $quiz = (object)['timeopen' => time(), 'timeclose' => time() + 3600];
@@ -145,8 +134,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Quiz has dates fails when timeopen missing.
-     *
-     * @covers \block_validador::validate_quiz_has_dates
      */
     public function test_quiz_has_dates_fails_when_timeopen_missing(): void {
         $quiz = (object)['timeopen' => 0, 'timeclose' => time() + 3600];
@@ -156,8 +143,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Quiz has dates fails when timeclose missing.
-     *
-     * @covers \block_validador::validate_quiz_has_dates
      */
     public function test_quiz_has_dates_fails_when_timeclose_missing(): void {
         $quiz = (object)['timeopen' => time(), 'timeclose' => 0];
@@ -167,8 +152,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Quiz has dates fails when both missing.
-     *
-     * @covers \block_validador::validate_quiz_has_dates
      */
     public function test_quiz_has_dates_fails_when_both_missing(): void {
         $quiz = (object)['timeopen' => 0, 'timeclose' => 0];
@@ -182,8 +165,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Autosubmit passes for autosubmit.
-     *
-     * @covers \block_validador::validate_quiz_auto_submit
      */
     public function test_autosubmit_passes_for_autosubmit(): void {
         $quiz = (object)['overduehandling' => 'autosubmit'];
@@ -193,8 +174,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Autosubmit fails for graceperiod.
-     *
-     * @covers \block_validador::validate_quiz_auto_submit
      */
     public function test_autosubmit_fails_for_graceperiod(): void {
         $quiz = (object)['overduehandling' => 'graceperiod'];
@@ -204,8 +183,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Autosubmit fails for open.
-     *
-     * @covers \block_validador::validate_quiz_auto_submit
      */
     public function test_autosubmit_fails_for_open(): void {
         $quiz = (object)['overduehandling' => 'open'];
@@ -219,8 +196,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Check showc returns true when not set.
-     *
-     * @covers \block_validador::check_showc
      */
     public function test_check_showc_returns_true_when_not_set(): void {
         $availability = (object)[];
@@ -230,8 +205,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Check showc returns true when showc is false.
-     *
-     * @covers \block_validador::check_showc
      */
     public function test_check_showc_returns_true_when_showc_is_false(): void {
         $availability = (object)['showc' => [false]];
@@ -241,8 +214,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Check showc returns false when showc is true.
-     *
-     * @covers \block_validador::check_showc
      */
     public function test_check_showc_returns_false_when_showc_is_true(): void {
         $availability = (object)['showc' => [true]];
@@ -256,8 +227,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Has group restriction direct match.
-     *
-     * @covers \block_validador::has_group_restriction
      */
     public function test_has_group_restriction_direct_match(): void {
         $availability = (object)['type' => 'group', 'id' => 42];
@@ -267,8 +236,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Has group restriction no match different id.
-     *
-     * @covers \block_validador::has_group_restriction
      */
     public function test_has_group_restriction_no_match_different_id(): void {
         $availability = (object)['type' => 'group', 'id' => 99];
@@ -278,8 +245,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Has group restriction nested match.
-     *
-     * @covers \block_validador::has_group_restriction
      */
     public function test_has_group_restriction_nested_match(): void {
         $availability = (object)[
@@ -295,8 +260,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Has group restriction nested no match.
-     *
-     * @covers \block_validador::has_group_restriction
      */
     public function test_has_group_restriction_nested_no_match(): void {
         $availability = (object)[
@@ -316,8 +279,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Check completion condition returns false for non completion type.
-     *
-     * @covers \block_validador::check_completion_condition
      */
     public function test_check_completion_condition_returns_false_for_non_completion_type(): void {
         $availability = (object)['type' => 'date', 'd' => '>=', 't' => time()];
@@ -327,8 +288,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Check completion condition returns false when no conditions.
-     *
-     * @covers \block_validador::check_completion_condition
      */
     public function test_check_completion_condition_returns_false_when_no_conditions(): void {
         $availability = (object)['op' => '&', 'c' => []];
@@ -342,8 +301,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Gradetopass passes when gradepass is 5.
-     *
-     * @covers \block_validador::gradetopass
      */
     public function test_gradetopass_passes_when_gradepass_is_5(): void {
         global $DB;
@@ -365,8 +322,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Gradetopass fails when gradepass is not 5.
-     *
-     * @covers \block_validador::gradetopass
      */
     public function test_gradetopass_fails_when_gradepass_is_not_5(): void {
         global $DB;
@@ -392,8 +347,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Autosubmit returns expected id.
-     *
-     * @covers \block_validador::validate_quiz_auto_submit
      */
     public function test_autosubmit_returns_expected_id(): void {
         $quiz = (object)['overduehandling' => 'autosubmit'];
@@ -407,8 +360,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Return pledge validations structure.
-     *
-     * @covers \block_validador::return_pledge_validations
      */
     public function test_return_pledge_validations_structure(): void {
         $result = $this->callprivate('return_pledge_validations', [true, false]);
@@ -421,8 +372,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Return pledge validations both false.
-     *
-     * @covers \block_validador::return_pledge_validations
      */
     public function test_return_pledge_validations_both_false(): void {
         $result = $this->callprivate('return_pledge_validations', [false, false]);
@@ -432,8 +381,6 @@ final class block_validador_test extends \advanced_testcase {
 
     /**
      * Return pledge validations both true.
-     *
-     * @covers \block_validador::return_pledge_validations
      */
     public function test_return_pledge_validations_both_true(): void {
         $result = $this->callprivate('return_pledge_validations', [true, true]);
