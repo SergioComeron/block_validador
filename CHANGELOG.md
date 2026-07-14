@@ -6,6 +6,14 @@
 - Añade workflow de auto-bump de versión en cada push a main
 - Añade CI/CD: auto-release, release y CI con syntax check y codestyle
 
+## [v1.1.6] - 2026-07-14
+
+### Otros cambios
+
+- migrar a repo standalone con symlinks y tests con atributos PHPUnit 11
+
+
+
 ## [v1.1.5] - 2026-05-25
 
 ### Correcciones
