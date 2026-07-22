@@ -112,9 +112,9 @@ class admin_setting_configdate extends \admin_setting {
                 }, $choices);
             }
             $selectname = $this->get_full_name() . "[$type]";
-            $output .= html_writer::select($choices, $selectname, $data[$type], null);
+            $output .= \html_writer::select($choices, $selectname, $data[$type], null);
         }
-        $output = html_writer::tag('div', $output, ['class' => 'form-date defaultsnext']);
+        $output = \html_writer::tag('div', $output, ['class' => 'form-date defaultsnext']);
 
         return format_admin_setting(
             $this,

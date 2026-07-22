@@ -164,6 +164,19 @@ class block_validador extends block_base {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid, 'Todas las preguntas en una única página');
                     $validationspassed = $validationspassed && $validation['passed'];
                 }
+                foreach ($this->validate_quiz_single_page($quiz) as $validation) {
+                    $this->content->text .= $this->save_and_render_validation($validation, $contextid, 'No debe haber saltos de página entre las preguntas');
+                    $validationspassed = $validationspassed && $validation['passed'];
+                }
+                foreach ($this->validate_quiz_has_questions($quiz) as $validation) {
+                    $this->content->text .= $this->save_and_render_validation($validation, $contextid, 'El cuestionario debe tener al menos una pregunta');
+                    $validationspassed = $validationspassed && $validation['passed'];
+                }
+                foreach ($this->validate_quiz_random_questions($quiz) as $validation) {
+                    $randomtitle = 'Las preguntas aleatorias no pueden superar las disponibles en la categoría del banco de preguntas';
+                    $this->content->text .= $this->save_and_render_validation($validation, $contextid, $randomtitle);
+                    $validationspassed = $validationspassed && $validation['passed'];
+                }
                 foreach ($this->grouprestictionvalidation($quiz, $group) as $validation) {
                     $this->content->text .= $this->save_and_render_validation($validation, $contextid, 'El cuestionario tiene restricción por grupo');
                     $validationspassed = $validationspassed && $validation['passed'];
@@ -361,6 +374,106 @@ class block_validador extends block_base {
             'id' => 'quizautosubmit',
             'name' => get_string('quizautosubmit', 'block_validador'),
             'passed' => $autosubmit,
+        ];
+
+        return $validations;
+    }
+
+    /**
+     * Validates that the quiz has at least one question.
+     */
+    private function validate_quiz_has_questions($quiz) {
+        global $DB;
+
+        $validations = [];
+
+        // Validación: verificar que el cuestionario tenga al menos una pregunta.
+        $hasquestions = $DB->count_records('quiz_slots', ['quizid' => $quiz->id]) > 0;
+
+        $validations[] = [
+            'id' => 'quizhasquestions',
+            'name' => get_string('quizhasquestions', 'block_validador'),
+            'passed' => $hasquestions,
+        ];
+
+        return $validations;
+    }
+
+    /**
+     * Validates that the quiz has no page breaks between questions.
+     *
+     * Complements questionperpagevalidation: the questionsperpage setting can be 0
+     * but manual page breaks persist per slot in quiz_slots.page, so every slot
+     * must actually be on page 1.
+     */
+    private function validate_quiz_single_page($quiz) {
+        global $DB;
+
+        $validations = [];
+
+        // Validación: ningún slot puede estar en una página distinta de la primera.
+        $singlepage = $DB->count_records_select('quiz_slots', 'quizid = ? AND page > 1', [$quiz->id]) == 0;
+
+        $validations[] = [
+            'id' => 'quizsinglepage',
+            'name' => get_string('quizsinglepage', 'block_validador'),
+            'passed' => $singlepage,
+        ];
+
+        return $validations;
+    }
+
+    /**
+     * Validates that random questions do not exceed the questions available in their bank category.
+     *
+     * Groups the random slots of the quiz by filter condition (category, subcategories, tags)
+     * and checks that each group does not request more questions than the ones available,
+     * to avoid the "Not enough questions in category" error during the attempt.
+     */
+    private function validate_quiz_random_questions($quiz) {
+        global $CFG;
+
+        require_once($CFG->dirroot . '/question/engine/lib.php');
+
+        $validations = [];
+        $randomvalid = true;
+
+        $cm = get_coursemodule_from_instance('quiz', $quiz->id);
+        $context = context_module::instance($cm->id);
+        $slots = \mod_quiz\question\bank\qbank_helper::get_question_structure($quiz->id, $context);
+
+        // Agrupar los slots aleatorios por condición de filtro: los que comparten
+        // categoría/etiquetas compiten por el mismo conjunto de preguntas.
+        // Un slot es aleatorio si tiene filtercondition (en 4.5 qtype='random',
+        // en 5.2 qtype=null con random=true, así que qtype no sirve).
+        $groups = [];
+        foreach ($slots as $slot) {
+            if (empty($slot->filtercondition)) {
+                continue;
+            }
+            $filter = $slot->filtercondition['filter'] ?? [];
+            $key = json_encode($filter);
+            if (!isset($groups[$key])) {
+                $groups[$key] = ['filter' => $filter, 'count' => 0];
+            }
+            $groups[$key]['count']++;
+        }
+
+        if ($groups) {
+            $loader = new \core_question\local\bank\random_question_loader(new \qubaid_list([]));
+            foreach ($groups as $group) {
+                $available = $loader->count_filtered_questions($group['filter']);
+                if ($group['count'] > $available) {
+                    $randomvalid = false;
+                    break;
+                }
+            }
+        }
+
+        $validations[] = [
+            'id' => 'quizrandomquestions',
+            'name' => get_string('quizrandomquestions', 'block_validador'),
+            'passed' => $randomvalid,
         ];
 
         return $validations;

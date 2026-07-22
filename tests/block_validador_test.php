@@ -23,6 +23,7 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/blocks/moodleblock.class.php');
 require_once($CFG->dirroot . '/blocks/validador/block_validador.php');
+require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
 /**
  * Unit tests for block_validador.
@@ -339,6 +340,209 @@ final class block_validador_test extends \advanced_testcase {
         $quizrecord = (object)['id' => $quiz->id];
         $result = $this->callprivate('gradetopass', [$quizrecord]);
         $this->assertFalse($result[0]['passed']);
+    }
+
+    // -------------------------------------------------------------------------
+    // validate_quiz_has_questions (needs DB)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Has questions passes when the quiz has at least one question.
+     */
+    public function test_has_questions_passes_when_quiz_has_a_question(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $questiongenerator->create_question_category();
+        $question = $questiongenerator->create_question('truefalse', null, ['category' => $category->id]);
+        quiz_add_quiz_question($question->id, $quiz);
+
+        $quizrecord = (object)['id' => $quiz->id];
+        $result = $this->callprivate('validate_quiz_has_questions', [$quizrecord]);
+        $this->assertTrue($result[0]['passed']);
+    }
+
+    /**
+     * Has questions fails when the quiz is empty.
+     */
+    public function test_has_questions_fails_when_quiz_is_empty(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        $quizrecord = (object)['id' => $quiz->id];
+        $result = $this->callprivate('validate_quiz_has_questions', [$quizrecord]);
+        $this->assertFalse($result[0]['passed']);
+    }
+
+    /**
+     * Has questions returns expected id.
+     */
+    public function test_has_questions_returns_expected_id(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        $quizrecord = (object)['id' => $quiz->id];
+        $result = $this->callprivate('validate_quiz_has_questions', [$quizrecord]);
+        $this->assertEquals('quizhasquestions', $result[0]['id']);
+    }
+
+    // -------------------------------------------------------------------------
+    // validate_quiz_single_page (needs DB)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Creates a quiz with one question on each of the given pages.
+     *
+     * @param array $pages Page number for each question to create.
+     * @return \stdClass Quiz record.
+     */
+    private function create_quiz_with_questions_on_pages(array $pages): \stdClass {
+        $course = $this->getDataGenerator()->create_course();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $questiongenerator->create_question_category();
+        foreach ($pages as $page) {
+            $question = $questiongenerator->create_question('truefalse', null, ['category' => $category->id]);
+            quiz_add_quiz_question($question->id, $quiz, $page);
+        }
+
+        return $quiz;
+    }
+
+    /**
+     * Single page validation passes when all questions are on page 1.
+     */
+    public function test_single_page_passes_when_all_questions_on_page_1(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $quiz = $this->create_quiz_with_questions_on_pages([1, 1, 1]);
+        $result = $this->callprivate('validate_quiz_single_page', [(object)['id' => $quiz->id]]);
+        $this->assertTrue($result[0]['passed']);
+    }
+
+    /**
+     * Single page validation fails when there is a page break.
+     */
+    public function test_single_page_fails_when_page_break_exists(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $quiz = $this->create_quiz_with_questions_on_pages([1, 2]);
+        $result = $this->callprivate('validate_quiz_single_page', [(object)['id' => $quiz->id]]);
+        $this->assertFalse($result[0]['passed']);
+    }
+
+    /**
+     * Single page validation passes for an empty quiz and returns expected id.
+     */
+    public function test_single_page_passes_when_quiz_is_empty(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $quiz = $this->create_quiz_with_questions_on_pages([]);
+        $result = $this->callprivate('validate_quiz_single_page', [(object)['id' => $quiz->id]]);
+        $this->assertTrue($result[0]['passed']);
+        $this->assertEquals('quizsinglepage', $result[0]['id']);
+    }
+
+    // -------------------------------------------------------------------------
+    // validate_quiz_random_questions (needs DB)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Creates a quiz with a question category holding $available questions and
+     * $random random slots drawing from it.
+     *
+     * @param int $available Number of questions to create in the category.
+     * @param int $random Number of random slots to add to the quiz.
+     * @return \stdClass Quiz record.
+     */
+    private function create_quiz_with_random_questions(int $available, int $random): \stdClass {
+        $course = $this->getDataGenerator()->create_course();
+        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $questiongenerator->create_question_category();
+        for ($i = 0; $i < $available; $i++) {
+            $questiongenerator->create_question('truefalse', null, ['category' => $category->id]);
+        }
+
+        if ($random > 0) {
+            $quizobj = \mod_quiz\quiz_settings::create($quiz->id);
+            $structure = \mod_quiz\structure::create_for_quiz($quizobj);
+            $structure->add_random_questions(1, $random, [
+                'filter' => [
+                    'category' => [
+                        'jointype' => 1,
+                        'values' => [$category->id],
+                        'filteroptions' => ['includesubcategories' => false],
+                    ],
+                ],
+            ]);
+        }
+
+        return $quiz;
+    }
+
+    /**
+     * Random questions validation passes when fewer random slots than available questions.
+     */
+    public function test_random_questions_passes_when_fewer_than_available(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $quiz = $this->create_quiz_with_random_questions(3, 2);
+        $result = $this->callprivate('validate_quiz_random_questions', [(object)['id' => $quiz->id]]);
+        $this->assertTrue($result[0]['passed']);
+    }
+
+    /**
+     * Random questions validation passes when random slots equal available questions.
+     */
+    public function test_random_questions_passes_when_equal_to_available(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $quiz = $this->create_quiz_with_random_questions(2, 2);
+        $result = $this->callprivate('validate_quiz_random_questions', [(object)['id' => $quiz->id]]);
+        $this->assertTrue($result[0]['passed']);
+    }
+
+    /**
+     * Random questions validation fails when more random slots than available questions.
+     */
+    public function test_random_questions_fails_when_more_than_available(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $quiz = $this->create_quiz_with_random_questions(1, 2);
+        $result = $this->callprivate('validate_quiz_random_questions', [(object)['id' => $quiz->id]]);
+        $this->assertFalse($result[0]['passed']);
+    }
+
+    /**
+     * Random questions validation passes when the quiz has no random questions.
+     */
+    public function test_random_questions_passes_when_no_random_questions(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $quiz = $this->create_quiz_with_random_questions(1, 0);
+        $result = $this->callprivate('validate_quiz_random_questions', [(object)['id' => $quiz->id]]);
+        $this->assertTrue($result[0]['passed']);
+        $this->assertEquals('quizrandomquestions', $result[0]['id']);
     }
 
     // -------------------------------------------------------------------------
