@@ -115,8 +115,12 @@ class block_validador extends block_base {
         if ($groupspassed) {
             $this->content->text .= "<h4>Cuestionarios</h4>";
             $validgroups = [];
+            $mintimecreated = get_config('block_validador', 'min_group_timecreated');
             foreach (groups_get_all_groups($COURSE->id) as $group) {
-                if (preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes') {
+                if (
+                    preg_match('/^#\d{6}#$/', $group->name) && $group->idnumber == 'planiexamenes'
+                        && $group->timecreated > $mintimecreated
+                ) {
                     $validgroups[] = $group;
                 }
             }
